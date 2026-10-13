@@ -53,7 +53,7 @@ jobs:
       # Root Directory (admin / miniapp) va boshqa sozlamalar Vercel loyihasidan olinadi
       - name: Loyihaga ulanish
         run: |
-          vercel link --yes --team "$VERCEL_TEAM" --project "${{ matrix.project }}" --token "$VERCEL_TOKEN"
+          vercel link --yes --scope "$VERCEL_TEAM" --project "${{ matrix.project }}" --token "$VERCEL_TOKEN"
           vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Qurish
