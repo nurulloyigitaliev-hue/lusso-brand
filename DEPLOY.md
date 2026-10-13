@@ -135,6 +135,14 @@ Ikkala Vercel loyihasi ham GitHub repo'siga ulangan (Root Directory:
 `miniapp` va `admin`). Ya'ni `main` branch'ga har push qilganingizda
 frontend o'zi qayta quriladi. Render ham xuddi shunday ishlaydi.
 
+> **Muhim:** Vercel push'larni ko'rishi uchun **Vercel GitHub ilovasi repo
+> egasining akkauntida** o'rnatilgan bo'lishi kerak (hozir —
+> `nurulloyigitaliev-hue`). Repo boshqa akkauntga o'tkazilsa, Vercel jim
+> to'xtab qoladi va sayt eski holatda qoladi. Tuzatish: yangi egasi bilan
+> GitHub'ga kirib → `github.com/apps/vercel/installations/new` → shu
+> akkaunt → **Only select repositories → lusso-brand → Install**.
+> Tekshirish: `github.com/settings/installations` da **Vercel** ko'rinishi kerak.
+
 Demak, odatdagi ish oqimi shunchaki:
 
 ```bash
