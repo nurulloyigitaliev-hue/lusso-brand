@@ -212,6 +212,8 @@ export async function updateCategory(req, res) {
   for (const key of ['slug', 'nameUz', 'nameRu', 'emoji', 'sortOrder']) {
     if (req.body[key] !== undefined) data[key] = req.body[key];
   }
+  // Plitka rasmi: bo'sh qoldirilsa — ilovada birinchi mahsulot rasmi chiqadi
+  if (req.body.imageUrl !== undefined) data.imageUrl = req.body.imageUrl || null;
   try {
     res.json(await SettingModel.updateCategory(req.params.id, data));
   } catch (err) {

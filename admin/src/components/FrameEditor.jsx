@@ -9,8 +9,9 @@ const clamp100 = (n) => Math.max(0, Math.min(100, n));
 
 // Rasmni ramkaga qo'lda joylashtirish: bir barmoq bilan surish, ikki barmoq bilan
 // kattalashtirish/kichraytirish (telefondagi galereyadek), slayder va sichqoncha g'ildiragi.
-// Ramka nisbati mini-ilovadagi mahsulot kartasi bilan bir xil (4:5).
-export default function FrameEditor({ url, onSave, onClose }) {
+// Ramka nisbati mini-ilovadagi rasm joyi bilan bir xil: mahsulot kartasi 4:5,
+// kategoriya plitkasi 1:1 (aspect="1 / 1").
+export default function FrameEditor({ url, onSave, onClose, aspect = '4 / 5' }) {
   const init = parseFrame(url);
   const [f, setF] = useState({ z: init.z, x: init.x, y: init.y, fit: init.fit });
   const fRef = useRef(f);
@@ -104,6 +105,7 @@ export default function FrameEditor({ url, onSave, onClose }) {
           <div
             ref={frameRef}
             className="frame-box"
+            style={{ aspectRatio: aspect }}
             onPointerDown={onDown}
             onPointerMove={onMove}
             onPointerUp={onUp}

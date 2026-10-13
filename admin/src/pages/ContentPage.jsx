@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 import ImageUploader from '../components/ImageUploader';
+import { frameStyle } from '../framing';
 
 // Storylar va kategoriyalar shu sahifada boshqariladi
 export default function ContentPage({ toast }) {
@@ -20,7 +21,7 @@ export default function ContentPage({ toast }) {
   const [cat, setCat] = useState({ slug: '', nameUz: '', nameRu: '', emoji: '' });
   // Tahrirlanayotgan kategoriya
   const [editId, setEditId] = useState(null);
-  const [editCat, setEditCat] = useState({ emoji: '', nameUz: '', nameRu: '' });
+  const [editCat, setEditCat] = useState({ emoji: '', nameUz: '', nameRu: '', imageUrl: '' });
 
   const load = () => {
     api.stories().then(setStories).catch((e) => toast(e.message, true));
@@ -97,7 +98,7 @@ export default function ContentPage({ toast }) {
 
   const startEdit = (c) => {
     setEditId(c.id);
-    setEditCat({ emoji: c.emoji || '', nameUz: c.nameUz || '', nameRu: c.nameRu || '' });
+    setEditCat({ emoji: c.emoji || '', nameUz: c.nameUz || '', nameRu: c.nameRu || '', imageUrl: c.imageUrl || '' });
   };
 
   const saveCategory = async () => {
@@ -107,6 +108,7 @@ export default function ContentPage({ toast }) {
         emoji: editCat.emoji.trim(),
         nameUz: editCat.nameUz.trim(),
         nameRu: editCat.nameRu.trim() || editCat.nameUz.trim(),
+        imageUrl: editCat.imageUrl || null,
       });
       toast('Kategoriya saqlandi ✅');
       setEditId(null);
@@ -230,7 +232,21 @@ export default function ContentPage({ toast }) {
           {categories.map((c) =>
             editId === c.id ? (
               <div key={c.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
-                <div className="grid-2">
+                <label className="label">Plitka rasmi (bosh sahifadagi kategoriya rasmi)</label>
+                <ImageUploader
+                  images={editCat.imageUrl ? [editCat.imageUrl] : []}
+                  onChange={(list) => setEditCat((s) => ({ ...s, imageUrl: list[0] || '' }))}
+                  onError={(m) => toast(m, true)}
+                  single
+                  autoFrame
+                  aspect="1 / 1"
+                />
+                {!editCat.imageUrl && (
+                  <div className="hint" style={{ marginTop: 6 }}>
+                    Rasm qo'yilmasa — shu kategoriyadagi birinchi mahsulot rasmi chiqadi
+                  </div>
+                )}
+                <div className="grid-2" style={{ marginTop: 12 }}>
                   <input
                     className="input"
                     placeholder="Emoji"
@@ -261,10 +277,15 @@ export default function ContentPage({ toast }) {
                 </div>
               </div>
             ) : (
-              <div className="info-row" key={c.id}>
-                <span style={{ color: 'var(--text)' }}>
-                  {c.emoji} {c.nameUz}{' '}
-                  <span className="muted">({c._count?.products ?? 0} ta mahsulot)</span>
+              <div className="info-row" key={c.id} style={{ alignItems: 'center' }}>
+                <span style={{ color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="cat-thumb" title="Rasmni o'zgartirish" onClick={() => startEdit(c)}>
+                    {c.imageUrl ? <img src={c.imageUrl} alt="" style={frameStyle(c.imageUrl)} /> : c.emoji || '🖼'}
+                  </span>
+                  <span style={{ color: 'var(--text)' }}>
+                    {c.emoji} {c.nameUz}{' '}
+                    <span className="muted">({c._count?.products ?? 0} ta mahsulot)</span>
+                  </span>
                 </span>
                 <span style={{ display: 'flex', gap: 6 }}>
                   <button className="btn sm light" onClick={() => startEdit(c)}>
