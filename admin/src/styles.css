@@ -1680,3 +1680,34 @@ textarea.input {
     bottom: calc(76px + env(safe-area-inset-bottom));
   }
 }
+
+/* ============ SAVDONI TOZALASH ============ */
+.clear-sales {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.clear-sales > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.clear-sales b {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.clear-sales-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn.danger-solid {
+  background: var(--red);
+  color: #fff;
+  box-shadow: none;
+}

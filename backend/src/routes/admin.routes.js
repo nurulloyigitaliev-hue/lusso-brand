@@ -35,6 +35,10 @@ router.get('/orders', admin.listOrders);
 router.get('/orders/:id', admin.getOrder);
 router.patch('/orders/:id', admin.updateOrder);
 
+// Savdoni tozalash: buyurtmalar va cheklar (mahsulot, ombor, mijozlar qoladi)
+router.get('/sales', admin.salesSummary);
+router.post('/sales/clear', admin.clearSales);
+
 // Mahsulotlar
 router.get('/products', admin.listProducts);
 router.post('/products', admin.createProduct);

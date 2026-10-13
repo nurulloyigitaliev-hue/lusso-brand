@@ -129,6 +129,21 @@ export async function updateOrder(req, res) {
   res.json(order);
 }
 
+// ---------------- SAVDONI TOZALASH ----------------
+export async function salesSummary(req, res) {
+  res.json(await OrderModel.salesSummary());
+}
+
+// Tasodifiy so'rov hamma narsani o'chirib yubormasligi uchun panel aniq
+// tasdiq so'zini va ko'rsatilgan oxirgi buyurtma raqamini (maxId) yuboradi
+export async function clearSales(req, res) {
+  const { confirm, maxId } = req.body || {};
+  if (confirm !== 'TOZALASH' || !Number.isInteger(maxId) || maxId < 0) {
+    return res.status(400).json({ error: "Tozalash tasdiqlanmadi. Qaytadan urinib ko'ring." });
+  }
+  res.json(await OrderModel.clearSales(maxId));
+}
+
 // ---------------- MAHSULOTLAR ----------------
 export async function listProducts(req, res) {
   res.json(await ProductModel.listAll());

@@ -33,6 +33,21 @@ export function isImageAvailable(url) {
   return fs.existsSync(path.join(config.uploadsDir, name));
 }
 
+// Yuklangan fayllarni (masalan, o'chirilgan buyurtmalarning cheklarini)
+// bazadan va diskdan o'chiradi. urls — "/uploads/<nom>" ko'rinishida.
+export async function removeUploads(urls) {
+  const names = urls
+    .filter((u) => typeof u === 'string' && u.startsWith('/uploads/'))
+    .map((u) => path.basename(u.split('#')[0].split('?')[0]));
+  if (!names.length) return;
+
+  await prisma.uploadedFile.deleteMany({ where: { name: { in: names } } });
+  for (const name of names) {
+    stored.delete(name);
+    fs.promises.unlink(path.join(config.uploadsDir, name)).catch(() => {});
+  }
+}
+
 // Mahsulotdan o'lik rasmlarni olib tashlaydi (bazaga tegmaydi)
 export function withLiveImages(product) {
   if (!product?.images) return product;

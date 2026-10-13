@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
+import ClearSales from '../components/ClearSales';
 
 const money = (n) => '₩' + Number(n || 0).toLocaleString('ko-KR');
 
 // Hali o'zgartirilmagan (test) rekvizitlar
 const TEST_ACCOUNTS = ['1234-5678-9012', '110-000-000000', '110-123-456789', ''];
 
-export default function Dashboard({ toast, onGoSettings }) {
+export default function Dashboard({ toast, onGoSettings, onCountChange }) {
   const [data, setData] = useState(null);
   const [settings, setSettings] = useState(null);
   const [error, setError] = useState('');
@@ -148,6 +149,14 @@ export default function Dashboard({ toast, onGoSettings }) {
           )}
         </div>
       </div>
+
+      <ClearSales
+        toast={toast}
+        onCleared={() => {
+          load();
+          onCountChange?.(0);
+        }}
+      />
     </>
   );
 }

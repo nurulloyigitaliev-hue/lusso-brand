@@ -99,7 +99,9 @@ export default function App() {
       </aside>
 
       <main className="main">
-        {page === 'dashboard' && <Dashboard {...props} onGoSettings={() => setPage('settings')} />}
+        {page === 'dashboard' && (
+          <Dashboard {...props} onGoSettings={() => setPage('settings')} onCountChange={setPending} />
+        )}
         {page === 'orders' && <OrdersPage {...props} onCountChange={setPending} />}
         {page === 'products' && <ProductsPage {...props} />}
         {page === 'stock' && <StockPage {...props} />}

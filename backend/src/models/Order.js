@@ -1,5 +1,9 @@
 // Buyurtmalar bilan ishlash (Prisma logikasi)
 import prisma from '../database/connection.js';
+import { removeUploads } from '../core/uploads.js';
+
+const PENDING = ['PENDING_PAYMENT', 'RECEIPT_SENT']; // to'lov tekshirilishi kerak
+const PAID = ['CONFIRMED', 'SHIPPED', 'DELIVERED']; // tushumga kiradi
 
 function generateOrderNumber() {
   const d = new Date();
@@ -71,12 +75,9 @@ export const OrderModel = {
     const [total, today, pending, users, revenueAgg, todayRevenueAgg] = await Promise.all([
       prisma.order.count(),
       prisma.order.count({ where: { createdAt: { gte: startOfDay } } }),
-      prisma.order.count({ where: { status: { in: ['PENDING_PAYMENT', 'RECEIPT_SENT'] } } }),
+      prisma.order.count({ where: { status: { in: PENDING } } }),
       prisma.user.count(),
-      prisma.order.aggregate({
-        _sum: { total: true },
-        where: { status: { in: ['CONFIRMED', 'SHIPPED', 'DELIVERED'] } },
-      }),
+      prisma.order.aggregate({ _sum: { total: true }, where: { status: { in: PAID } } }),
       prisma.order.aggregate({
         _sum: { total: true },
         where: { createdAt: { gte: startOfDay }, status: { not: 'CANCELLED' } },
@@ -118,6 +119,33 @@ export const OrderModel = {
       todayRevenue: todayRevenueAgg._sum.total || 0,
       topProducts: top,
     };
+  },
+
+  // Savdoni tozalashdan oldin admin ko'radigan ma'lumot.
+  // maxId — shu paytdagi oxirgi buyurtma: tozalash faqat shungacha bo'lganlarni
+  // o'chiradi, oyna ochiq turganda kelgan yangi buyurtma tasodifan o'chib ketmaydi.
+  async salesSummary() {
+    const [orders, pending, receipts, revenueAgg, last] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.count({ where: { status: { in: PENDING } } }),
+      prisma.order.count({ where: { receiptUrl: { not: null } } }),
+      prisma.order.aggregate({ _sum: { total: true }, where: { status: { in: PAID } } }),
+      prisma.order.findFirst({ orderBy: { id: 'desc' }, select: { id: true } }),
+    ]);
+    return { orders, pending, receipts, revenue: revenueAgg._sum.total || 0, maxId: last?.id || 0 };
+  },
+
+  // Buyurtmalarni (id <= maxId) va ularning to'lov cheklarini o'chiradi.
+  // Mahsulotlar, ombor qoldiqlari va mijozlarga tegilmaydi.
+  async clearSales(maxId) {
+    const where = { id: { lte: maxId } };
+    const withReceipt = await prisma.order.findMany({
+      where: { ...where, receiptUrl: { not: null } },
+      select: { receiptUrl: true },
+    });
+    const { count } = await prisma.order.deleteMany({ where });
+    await removeUploads(withReceipt.map((o) => o.receiptUrl));
+    return { deleted: count };
   },
 };
 

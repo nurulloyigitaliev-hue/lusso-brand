@@ -92,6 +92,10 @@ export const api = {
   orders: (status) => request('/orders' + (status && status !== 'all' ? `?status=${status}` : '')),
   updateOrder: (id, data) => request(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
+  salesSummary: () => request('/sales'),
+  clearSales: (maxId) =>
+    request('/sales/clear', { method: 'POST', body: JSON.stringify({ confirm: 'TOZALASH', maxId }) }),
+
   products: () => request('/products'),
   createProduct: (data) => request('/products', { method: 'POST', body: JSON.stringify(data) }),
   updateProduct: (id, data) => request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
