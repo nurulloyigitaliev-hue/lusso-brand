@@ -268,6 +268,7 @@ export default function ProductsPage({ toast }) {
               images={form.images}
               onChange={(images) => set('images', images)}
               onError={(m) => toast(m, true)}
+              autoFrame
             />
           </div>
 

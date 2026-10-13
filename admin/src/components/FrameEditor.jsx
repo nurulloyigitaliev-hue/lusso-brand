@@ -2,41 +2,93 @@ import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { parseFrame, buildFrame, frameStyle } from '../framing';
 
-// Rasmni ramkaga qo'lda joylashtirish: sudrab surish + kattalik slayderi.
+const MIN_Z = 0.5;
+const MAX_Z = 3;
+const clampZ = (z) => Math.max(MIN_Z, Math.min(MAX_Z, z));
+const clamp100 = (n) => Math.max(0, Math.min(100, n));
+
+// Rasmni ramkaga qo'lda joylashtirish: bir barmoq bilan surish, ikki barmoq bilan
+// kattalashtirish/kichraytirish (telefondagi galereyadek), slayder va sichqoncha g'ildiragi.
 // Ramka nisbati mini-ilovadagi mahsulot kartasi bilan bir xil (4:5).
 export default function FrameEditor({ url, onSave, onClose }) {
   const init = parseFrame(url);
   const [f, setF] = useState({ z: init.z, x: init.x, y: init.y, fit: init.fit });
-  const drag = useRef(null);
+  const fRef = useRef(f);
+  fRef.current = f;
+  const pointers = useRef(new Map()); // ekranga tegib turgan barmoqlar
+  const gesture = useRef(null);
   const frameRef = useRef(null);
 
   const preview = buildFrame(init.src, f);
 
+  // Barmoqlar soni o'zgarganda harakat qaytadan boshlanadi — rasm sakramaydi
+  const startGesture = () => {
+    const pts = [...pointers.current.values()];
+    const s = fRef.current;
+    if (pts.length >= 2) {
+      const [a, b] = pts;
+      gesture.current = {
+        dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+        mx: (a.x + b.x) / 2,
+        my: (a.y + b.y) / 2,
+        z: s.z,
+        x: s.x,
+        y: s.y,
+      };
+    } else if (pts.length === 1) {
+      gesture.current = { px: pts[0].x, py: pts[0].y, x: s.x, y: s.y };
+    } else {
+      gesture.current = null;
+    }
+  };
+
   const onDown = (e) => {
     e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { px: e.clientX, py: e.clientY, x: f.x, y: f.y };
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    startGesture();
   };
 
   const onMove = (e) => {
-    const d = drag.current;
-    if (!d) return;
+    if (!pointers.current.has(e.pointerId)) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const g = gesture.current;
+    if (!g) return;
     const r = frameRef.current.getBoundingClientRect();
-    // Rasm barmoq ortidan yuradi: o'ngga sursangiz chap qismi ko'rinadi
-    const k = 100 / Math.max(f.z, 1);
-    const clamp = (n) => Math.max(0, Math.min(100, n));
+    const pts = [...pointers.current.values()];
+
+    if (pts.length >= 2 && g.dist) {
+      // Ikki barmoq: oraliq masofasi — kattalik, o'rtasi — surish
+      const [a, b] = pts;
+      const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      const z = clampZ(g.z * (dist / g.dist));
+      const k = 100 / Math.max(z, 1);
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      setF((s) => ({
+        ...s,
+        z: +z.toFixed(3),
+        x: clamp100(g.x - ((mx - g.mx) / r.width) * k),
+        y: clamp100(g.y - ((my - g.my) / r.height) * k),
+      }));
+      return;
+    }
+
+    // Bitta barmoq / sichqoncha: rasm barmoq ortidan yuradi
+    const k = 100 / Math.max(fRef.current.z, 1);
     setF((s) => ({
       ...s,
-      x: clamp(d.x - ((e.clientX - d.px) / r.width) * k),
-      y: clamp(d.y - ((e.clientY - d.py) / r.height) * k),
+      x: clamp100(g.x - ((e.clientX - g.px) / r.width) * k),
+      y: clamp100(g.y - ((e.clientY - g.py) / r.height) * k),
     }));
   };
 
-  const onUp = () => {
-    drag.current = null;
+  const onUp = (e) => {
+    pointers.current.delete(e.pointerId);
+    startGesture();
   };
 
   const onWheel = (e) => {
-    setF((s) => ({ ...s, z: Math.max(0.5, Math.min(3, s.z - e.deltaY * 0.002)) }));
+    setF((s) => ({ ...s, z: clampZ(s.z - e.deltaY * 0.002) }));
   };
 
   // Mahsulot oynasi ichidan ochiladi — body ga chiqaramiz, aks holda u oynani ham yopib yuboradi
@@ -62,7 +114,7 @@ export default function FrameEditor({ url, onSave, onClose }) {
             <div className="frame-grid" />
           </div>
           <div className="hint" style={{ textAlign: 'center', marginTop: 8 }}>
-            Rasmni barmoq yoki sichqoncha bilan suring
+            Bir barmoq — surish, ikki barmoq — kattalashtirish / kichraytirish
           </div>
         </div>
 
@@ -73,14 +125,14 @@ export default function FrameEditor({ url, onSave, onClose }) {
           <button
             type="button"
             className="btn light sm"
-            onClick={() => setF((s) => ({ ...s, z: Math.max(0.5, +(s.z - 0.1).toFixed(2)) }))}
+            onClick={() => setF((s) => ({ ...s, z: clampZ(+(s.z - 0.1).toFixed(2)) }))}
           >
             −
           </button>
           <input
             type="range"
-            min="0.5"
-            max="3"
+            min={MIN_Z}
+            max={MAX_Z}
             step="0.01"
             value={f.z}
             onChange={(e) => setF((s) => ({ ...s, z: Number(e.target.value) }))}
@@ -88,7 +140,7 @@ export default function FrameEditor({ url, onSave, onClose }) {
           <button
             type="button"
             className="btn light sm"
-            onClick={() => setF((s) => ({ ...s, z: Math.min(3, +(s.z + 0.1).toFixed(2)) }))}
+            onClick={() => setF((s) => ({ ...s, z: clampZ(+(s.z + 0.1).toFixed(2)) }))}
           >
             +
           </button>

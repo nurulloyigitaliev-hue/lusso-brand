@@ -3,8 +3,9 @@ import api from '../api';
 import FrameEditor from './FrameEditor';
 import { frameStyle } from '../framing';
 
-// Rasm yuklash: galereyadan tanlash, sudrab tashlash yoki havola qo'yish
-export default function ImageUploader({ images = [], onChange, onError }) {
+// Rasm yuklash: galereyadan tanlash, sudrab tashlash yoki havola qo'yish.
+// autoFrame — rasm qo'yilishi bilan ramka muharriri ochiladi (kattalashtirish, surish).
+export default function ImageUploader({ images = [], onChange, onError, autoFrame = false }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
@@ -26,6 +27,7 @@ export default function ImageUploader({ images = [], onChange, onError }) {
     }
     onChange([...images, ...added]);
     setBusy(false);
+    if (autoFrame && added.length) setEditing(images.length);
   };
 
   const onPick = (e) => {
@@ -44,6 +46,7 @@ export default function ImageUploader({ images = [], onChange, onError }) {
     if (!value) return;
     onChange([...images, value]);
     setUrl('');
+    if (autoFrame) setEditing(images.length);
   };
 
   const remove = (i) => onChange(images.filter((_, idx) => idx !== i));
