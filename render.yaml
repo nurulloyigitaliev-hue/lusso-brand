@@ -30,7 +30,7 @@ services:
         sync: false
       - key: ADMIN_MINIAPP_URL  # BotFather /newapp havolasi (ixtiyoriy)
         value: ""
-      - key: PUBLIC_URL         # https://lusso-brand.onrender.com
+      - key: PUBLIC_URL         # https://lusso-brand-orgr.onrender.com
         sync: false
       - key: TELEGRAM_ORDERS    # true — buyurtma Telegram ilovasining o'zida
         value: "true"

@@ -4,7 +4,7 @@
 |---|---|---|
 | Mini App | Vercel | https://lusso-miniapp.vercel.app |
 | Admin panel | Vercel | https://lusso-admin-sand.vercel.app |
-| Backend + bot | Render | https://lusso-brand.onrender.com |
+| Backend + bot | Render | https://lusso-brand-orgr.onrender.com |
 | Baza | Neon.tech | (PostgreSQL) |
 
 > Admin panel odatda **botning ichida** ochiladi: `/panel` → tugma.
@@ -20,8 +20,10 @@ Frontend allaqachon deploy qilingan. Qolgani — backend.
 2. **New → Blueprint** tugmasi.
 3. `jtoxtasinov0-sys/lusso-brand` repo'sini tanlang. Render `render.yaml` ni
    o'zi topadi va sozlamalarni to'ldiradi.
-4. **Servis nomi `lusso-brand` bo'lib qolsin** — `vercel.json` aynan shu
-   manzilga murojaat qiladi. Boshqa nom qo'ysangiz, 4-bo'limga qarang.
+4. **Servis nomi `lusso-brand`**. Render unga `lusso-brand-orgr.onrender.com`
+   manzilini bergan va `vercel.json` aynan shu manzilga murojaat qiladi.
+   Manzil boshqacha bo'lsa (Render logida `Available at your primary URL ...`),
+   4-bo'limga qarang.
 5. Render maxfiy qiymatlarni so'raydi. Ularni `backend/.env` faylingizdan
    ko'chiring:
 
@@ -33,7 +35,7 @@ Frontend allaqachon deploy qilingan. Qolgani — backend.
    | `ADMIN_PASSWORD` | admin panel paroli |
    | `WEB_APP_URL` | `https://lusso-miniapp.vercel.app` |
    | `ADMIN_PANEL_URL` | `https://lusso-admin-sand.vercel.app` |
-   | `PUBLIC_URL` | `https://lusso-brand.onrender.com` |
+   | `PUBLIC_URL` | `https://lusso-brand-orgr.onrender.com` |
    | `BOT_URL` | *(ixtiyoriy)* `https://t.me/<bot>` — brauzerdagi "botni ochish" tugmasi |
 
    Do'kon va admin panel hozircha **faqat Telegram bot ichida** ishlaydi —
@@ -51,7 +53,7 @@ Frontend allaqachon deploy qilingan. Qolgani — backend.
    Telegramsiz chaqira oladi.
 
 6. **Apply** → birinchi build 3–5 daqiqa. Tayyor bo'lgach
-   `https://lusso-brand.onrender.com` manzili `status: ishlayapti ✅`
+   `https://lusso-brand-orgr.onrender.com` manzili `status: ishlayapti ✅`
    qaytarsa, hammasi joyida.
 
 ## 2. Bazani to'ldirish (bir marta)
@@ -100,7 +102,9 @@ Doimiy `t.me/...` havola ham kerak bo'lsa:
 
 `miniapp/vercel.json` va `admin/vercel.json` dagi ikkita `destination`
 manzilini yangi manzilga almashtiring va push qiling — Vercel o'zi qayta
-deploy qiladi:
+deploy qiladi. **Faqat kompyuterda o'zgartirib qo'lda joylamang**: keyingi
+push repo'dagi eski manzilni qaytarib qo'yadi va do'kon bilan admin panel
+bo'sh ko'rinadi (`Xatolik (404)`).
 
 ```bash
 git add -A && git commit -m "backend manzili yangilandi" && git push
