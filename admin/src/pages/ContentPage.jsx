@@ -277,17 +277,15 @@ export default function ContentPage({ toast }) {
                 </div>
               </div>
             ) : (
-              <div className="info-row" key={c.id} style={{ alignItems: 'center' }}>
-                <span style={{ color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span className="cat-thumb" title="Rasmni o'zgartirish" onClick={() => startEdit(c)}>
-                    {c.imageUrl ? <img src={c.imageUrl} alt="" style={frameStyle(c.imageUrl)} /> : c.emoji || '🖼'}
-                  </span>
-                  <span style={{ color: 'var(--text)' }}>
-                    {c.emoji} {c.nameUz}{' '}
-                    <span className="muted">({c._count?.products ?? 0} ta mahsulot)</span>
-                  </span>
+              <div className="info-row cat-row" key={c.id}>
+                <span className="cat-thumb" title="Rasmni o'zgartirish" onClick={() => startEdit(c)}>
+                  {c.imageUrl ? <img src={c.imageUrl} alt="" style={frameStyle(c.imageUrl)} /> : c.emoji || '🖼'}
                 </span>
-                <span style={{ display: 'flex', gap: 6 }}>
+                <span className="cat-name">
+                  {c.emoji} {c.nameUz}
+                  <small>{c._count?.products ?? 0} ta mahsulot</small>
+                </span>
+                <span className="cat-actions">
                   <button className="btn sm light" onClick={() => startEdit(c)}>
                     ✏️
                   </button>

@@ -466,6 +466,32 @@ tbody tr:hover {
   transform: scale(var(--z, 1));
 }
 
+/* Kategoriya qatori: nom uzun bo'lsa keyingi qatorga o'tadi, tugmalar doim o'ng tomonda
+   (telefonda kartadan chiqib ketmaydi) */
+.info-row.cat-row {
+  align-items: center;
+}
+
+.cat-row .cat-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.cat-row .cat-name small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.cat-row .cat-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
 .muted {
   color: var(--muted);
   font-size: 13px;
