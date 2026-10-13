@@ -131,17 +131,19 @@ yuklash kerak.
 
 ## Keyingi o'zgarishlar
 
-Ikkala Vercel loyihasi ham GitHub repo'siga ulangan (Root Directory:
-`miniapp` va `admin`). Ya'ni `main` branch'ga har push qilganingizda
-frontend o'zi qayta quriladi. Render ham xuddi shunday ishlaydi.
+Repo (`nurulloyigitaliev-hue`) va Vercel (`abdurahmon10`) turli akkauntlarda,
+shuning uchun Vercel'ning o'z GitHub ulanishi ishlamaydi. Frontend'ni GitHub
+Actions joylaydi: `.github/workflows/vercel-deploy.yml` — `main`ga `admin/` yoki
+`miniapp/` o'zgargan har push'da ikkala Vercel loyihasi qayta quriladi.
+Render (backend) esa repo bilan bir akkauntda — o'zi yangilanadi.
 
-> **Muhim:** Vercel push'larni ko'rishi uchun **Vercel GitHub ilovasi repo
-> egasining akkauntida** o'rnatilgan bo'lishi kerak (hozir —
-> `nurulloyigitaliev-hue`). Repo boshqa akkauntga o'tkazilsa, Vercel jim
-> to'xtab qoladi va sayt eski holatda qoladi. Tuzatish: yangi egasi bilan
-> GitHub'ga kirib → `github.com/apps/vercel/installations/new` → shu
-> akkaunt → **Only select repositories → lusso-brand → Install**.
-> Tekshirish: `github.com/settings/installations` da **Vercel** ko'rinishi kerak.
+**Bir marta sozlash (VERCEL_TOKEN):**
+
+1. vercel.com → avatar → **Account Settings → Tokens** → **Create**
+   (Scope: `abdurahmon10`, Expiration: No expiration) → tokenni nusxalang.
+2. Repo egasi bilan GitHub → repo → **Settings → Secrets and variables →
+   Actions → New repository secret** → Name: `VERCEL_TOKEN`, Secret: token.
+3. Tekshirish: **Actions → "Vercel'ga joylash" → Run workflow**.
 
 Demak, odatdagi ish oqimi shunchaki:
 
@@ -149,7 +151,9 @@ Demak, odatdagi ish oqimi shunchaki:
 git add -A && git commit -m "o'zgarish tavsifi" && git push
 ```
 
-Qo'lda deploy kerak bo'lsa (masalan commit qilmasdan sinash uchun):
+Qo'lda deploy kerak bo'lsa (masalan commit qilmasdan sinash uchun) — avval
+albatta `git pull` qiling. Kompyuterdagi eski nusxadan `--prod` qilinsa, sayt
+eski holatga qaytib qoladi:
 
 ```bash
 vercel deploy --prod --yes --cwd miniapp

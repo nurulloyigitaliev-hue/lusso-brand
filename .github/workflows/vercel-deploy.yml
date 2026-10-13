@@ -1,0 +1,63 @@
+# Admin panel va Mini App'ni Vercel'ga joylash — main'ga har push'da o'zi ishlaydi.
+# Vercel'ning GitHub ulanishi o'rniga: repo bir akkauntda, Vercel boshqa akkauntda
+# bo'lgani uchun Vercel push'larni ko'rmaydi. Shu sababli joylashni GitHub o'zi qiladi.
+#
+# Bir marta sozlash: repo → Settings → Secrets and variables → Actions →
+# New repository secret → Name: VERCEL_TOKEN, Secret: Vercel'dagi token.
+# Qo'lda ishga tushirish: Actions → "Vercel'ga joylash" → Run workflow.
+name: Vercel'ga joylash
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'admin/**'
+      - 'miniapp/**'
+      - '.github/workflows/vercel-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [lusso-admin, lusso-miniapp]
+    concurrency:
+      group: vercel-${{ matrix.project }}
+      cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TEAM: abdurahmon10
+      VERCEL_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Token borligini tekshirish
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN topilmadi. Repo → Settings → Secrets and variables → Actions → New repository secret → VERCEL_TOKEN"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Vercel CLI
+        run: npm install --global vercel@59.26.0
+
+      # Root Directory (admin / miniapp) va boshqa sozlamalar Vercel loyihasidan olinadi
+      - name: Loyihaga ulanish
+        run: |
+          vercel link --yes --team "$VERCEL_TEAM" --project "${{ matrix.project }}" --token "$VERCEL_TOKEN"
+          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+
+      - name: Qurish
+        run: vercel build --prod --token "$VERCEL_TOKEN"
+
+      - name: Joylash
+        run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
