@@ -17,6 +17,7 @@ const EMPTY = {
   descRu: '',
   isActive: true,
   isNew: false,
+  position: '',
   images: [],
   variants: [{ label: '', stock: 10, extraPrice: 0 }],
 };
@@ -68,6 +69,14 @@ export default function ProductsPage({ toast }) {
 
   useEffect(load, []);
 
+  // Kategoriya ichidagi o'rni (1, 2, 3...) — ro'yxat backend'dan do'kondagi tartibda keladi
+  const positions = {};
+  const counted = {};
+  for (const p of products) {
+    counted[p.categoryId] = (counted[p.categoryId] || 0) + 1;
+    positions[p.id] = counted[p.categoryId];
+  }
+
   const openNew = () => {
     setEditId(null);
     setForm({ ...EMPTY, categoryId: categories[0]?.id || '' });
@@ -86,6 +95,7 @@ export default function ProductsPage({ toast }) {
       descRu: p.descRu || '',
       isActive: p.isActive,
       isNew: p.isNew,
+      position: positions[p.id] || '',
       images: p.images.map((i) => i.url),
       variants: p.variants.length
         ? p.variants.map((v) => ({ label: v.label, stock: v.stock, extraPrice: v.extraPrice, color: v.color || '' }))
@@ -126,6 +136,7 @@ export default function ProductsPage({ toast }) {
       price: Number(form.price),
       oldPrice: form.oldPrice ? Number(form.oldPrice) : null,
       categoryId: Number(form.categoryId),
+      position: Number(form.position) || null,
       variants: form.variants.filter((v) => String(v.label).trim()),
     };
     try {
@@ -185,6 +196,7 @@ export default function ProductsPage({ toast }) {
           <table>
             <thead>
               <tr>
+                <th>№</th>
                 <th>Rasm</th>
                 <th>Nomi</th>
                 <th>Kategoriya</th>
@@ -199,6 +211,7 @@ export default function ProductsPage({ toast }) {
                 const stock = p.variants.reduce((s, v) => s + v.stock, 0);
                 return (
                   <tr key={p.id}>
+                    <td className="muted">{positions[p.id]}</td>
                     <td>
                       <img className="thumb" src={p.images[0]?.url} alt="" />
                     </td>
@@ -330,6 +343,23 @@ export default function ProductsPage({ toast }) {
                 <option value="0">Yo'q</option>
                 <option value="1">Ha — "Yangi kelganlar"da</option>
               </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <label className="label">Do'kondagi o'rni (kategoriya ichida)</label>
+            <input
+              className="input"
+              type="number"
+              min="1"
+              style={{ maxWidth: 140 }}
+              value={form.position}
+              placeholder="1"
+              onChange={(e) => set('position', e.target.value)}
+            />
+            <div className="var-hint">
+              1 — eng birinchi, 2 — ikkinchi va hokazo. Qolgan mahsulotlar o'zi bir pog'ona suriladi.
+              {!editId && " Bo'sh qoldirilsa — birinchi bo'lib chiqadi."}
             </div>
           </div>
 

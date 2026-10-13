@@ -1730,6 +1730,13 @@ svg.ic {
   color: var(--gold);
 }
 
+.sheet-ship {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
 .opt-label {
   display: flex;
   justify-content: space-between;

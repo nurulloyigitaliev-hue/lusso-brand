@@ -166,6 +166,7 @@ export default function ProductSheet({ product, lang, t, onClose, onAdd }) {
                 </>
               )}
             </div>
+            <div className="sheet-ship">🚚 {t.freeShipping}</div>
 
             {variants.length > 0 && !(variants.length === 1 && variants[0].label === 'Standart') && (
               <div>

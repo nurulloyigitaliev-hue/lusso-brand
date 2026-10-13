@@ -134,9 +134,13 @@ export async function listProducts(req, res) {
   res.json(await ProductModel.listAll());
 }
 
+// position — kategoriyadagi o'rni (1, 2, 3...). Bazada ustun emas, alohida qo'llanadi.
 export async function createProduct(req, res) {
+  const { position, ...data } = req.body || {};
   try {
-    res.json(await ProductModel.create(req.body));
+    const product = await ProductModel.create(data);
+    if (Number(position) >= 1) await ProductModel.place(product.id, position);
+    res.json(product);
   } catch (err) {
     console.error('createProduct:', err);
     res.status(400).json({ error: err.message });
@@ -144,8 +148,11 @@ export async function createProduct(req, res) {
 }
 
 export async function updateProduct(req, res) {
+  const { position, ...data } = req.body || {};
   try {
-    res.json(await ProductModel.update(req.params.id, req.body));
+    const product = await ProductModel.update(req.params.id, data);
+    if (Number(position) >= 1) await ProductModel.place(product.id, position);
+    res.json(product);
   } catch (err) {
     console.error('updateProduct:', err);
     res.status(400).json({ error: err.message });

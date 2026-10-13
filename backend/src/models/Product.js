@@ -158,6 +158,29 @@ export const ProductModel = {
     });
   },
 
+  // Mahsulotni o'z kategoriyasida N-o'ringa qo'yish (1 — eng birinchi).
+  // Qolganlari bir pog'ona suriladi va kategoriya 1, 2, 3... deb qayta raqamlanadi.
+  async place(id, position) {
+    const productId = Number(id);
+    const product = await prisma.product.findUnique({ where: { id: productId }, select: { categoryId: true } });
+    if (!product) return;
+
+    const rows = await prisma.product.findMany({
+      where: { categoryId: product.categoryId },
+      select: { id: true, sortOrder: true },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'desc' }],
+    });
+    const ids = rows.map((r) => r.id).filter((pid) => pid !== productId);
+    const at = Math.min(Math.max(Math.floor(Number(position)) - 1, 0), ids.length);
+    ids.splice(at, 0, productId);
+
+    const current = new Map(rows.map((r) => [r.id, r.sortOrder]));
+    const changed = ids.map((pid, i) => [pid, i + 1]).filter(([pid, order]) => current.get(pid) !== order);
+    await prisma.$transaction(
+      changed.map(([pid, order]) => prisma.product.update({ where: { id: pid }, data: { sortOrder: order } }))
+    );
+  },
+
   async remove(id) {
     return prisma.product.delete({ where: { id: Number(id) } });
   },
