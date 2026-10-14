@@ -21,6 +21,14 @@ export function parseFrame(url = '') {
   };
 }
 
+// Kichik rasm: serverdagi rasmga "?w=480" qo'shiladi ("#" ramka qismi saqlanadi).
+// Server uni yengil WebP qilib beradi — kartochkalar tez ochiladi.
+export function thumb(url, w = 480) {
+  if (typeof url !== 'string' || !url.startsWith('/uploads/') || url.includes('?')) return url;
+  const i = url.indexOf('#');
+  return i < 0 ? `${url}?w=${w}` : `${url.slice(0, i)}?w=${w}${url.slice(i)}`;
+}
+
 // <img> uchun style: object-fit/position + kattalashtirish (--z CSS o'zgaruvchisi orqali)
 export function frameStyle(url) {
   const f = parseFrame(url);

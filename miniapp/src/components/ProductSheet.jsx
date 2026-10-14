@@ -6,7 +6,7 @@ import { PLACEHOLDER, onImgError, discountOf, stockTotal } from './ProductCard';
 import Icon from './Icon';
 import ImageViewer from './ImageViewer';
 import { ContactCard } from './ContactSheet';
-import { frameStyle } from '../framing';
+import { frameStyle, thumb as small } from '../framing';
 import { colorOf } from '../colors';
 
 // Koreya o'lchami (mm) → EU / US
@@ -129,8 +129,9 @@ export default function ProductSheet({ product, lang, t, onClose, onAdd }) {
                 <div className="gallery-cell" key={i}>
                   <img
                     ref={(el) => (imgRefs.current[i] = el)}
-                    src={im.url}
+                    src={small(im.url, 720)}
                     alt={name}
+                    loading={i > 0 ? 'lazy' : undefined}
                     style={frameStyle(im.url)}
                     onError={onImgError}
                     onClick={() => {
@@ -216,7 +217,7 @@ export default function ProductSheet({ product, lang, t, onClose, onAdd }) {
                       >
                         {thumb && (
                           <span className="opt-thumb">
-                            <img src={thumb} alt="" style={frameStyle(thumb)} onError={onImgError} />
+                            <img src={small(thumb, 240)} alt="" style={frameStyle(thumb)} onError={onImgError} />
                           </span>
                         )}
                         {color && <i className="dot" style={{ background: color }} />}

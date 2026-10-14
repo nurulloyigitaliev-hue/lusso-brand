@@ -1,6 +1,7 @@
 // LUSSO BRAND KR — asosiy ishga tushirish fayli
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import config from './config/default.js';
 import { connectDatabase } from './database/connection.js';
 import bot, { hasBot } from './core/bot.js';
@@ -9,6 +10,7 @@ import clientRoutes from './routes/client.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import { serveFromDatabase } from './middlewares/upload.middleware.js';
 import { loadStoredUploads } from './core/uploads.js';
+import { serveThumb } from './core/thumbs.js';
 import { ensureDecants } from './core/decants.js';
 import { renameCategories } from './core/categoryNames.js';
 
@@ -19,7 +21,11 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(cors());
+// JSON javoblar siqib yuboriladi — katalog 5–8 marta yengil bo'ladi
+app.use(compression());
 app.use(express.json({ limit: '5mb' }));
+// Kartochkalar uchun kichik rasm: /uploads/x.jpg?w=480
+app.use('/uploads', serveThumb);
 // Rasmlar kamdan-kam o'zgaradi — brauzer va Vercel ularni saqlab qolsin,
 // shunda ilova ikkinchi marta ochilganda rasmlar qayta yuklanmaydi
 app.use('/uploads', express.static(config.uploadsDir, { maxAge: '30d' }));

@@ -1,10 +1,14 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ProductCard from '../components/ProductCard';
 import Icon from '../components/Icon';
 import ImageViewer from '../components/ImageViewer';
 import { ContactCard } from '../components/ContactSheet';
 import { onImgError } from '../components/ProductCard';
 import { haptic } from '../telegram';
+
+// Mahsulotlar bo'lak-bo'lak chiziladi: avval 24 ta, pastga tushgan sari yana —
+// katalog qanchalik katta bo'lmasin, sahifa tez ochiladi
+const PAGE = 24;
 
 export default function Catalog({
   t,
@@ -26,6 +30,20 @@ export default function Catalog({
   autoFocus,
 }) {
   const segRef = useRef(null);
+  const moreRef = useRef(null);
+  const [shown, setShown] = useState(PAGE);
+
+  useEffect(() => setShown(PAGE), [category, brand, sort, search]);
+
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!el || shown >= products.length) return undefined;
+    const io = new IntersectionObserver((e) => e[0].isIntersecting && setShown((n) => n + PAGE), {
+      rootMargin: '900px 0px',
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [shown, products.length]);
   const [glider, setGlider] = useState({ left: 4, width: 0 });
   const [viewer, setViewer] = useState(null);
 
@@ -166,11 +184,18 @@ export default function Catalog({
           <p>{t.nothingFoundText}</p>
         </div>
       ) : (
-        <div className="grid" key={category + brand + sort}>
-          {products.map((p, i) => (
-            <ProductCard key={p.id} index={i} product={p} lang={lang} t={t} onOpen={onOpen} onQuickAdd={onQuickAdd} />
-          ))}
-        </div>
+        <>
+          <div className="grid" key={category + brand + sort}>
+            {products.slice(0, shown).map((p, i) => (
+              <ProductCard key={p.id} index={i} product={p} lang={lang} t={t} onOpen={onOpen} onQuickAdd={onQuickAdd} />
+            ))}
+          </div>
+          {shown < products.length && (
+            <button ref={moreRef} className="btn ghost" style={{ marginTop: 16 }} onClick={() => setShown((n) => n + PAGE)}>
+              {t.showMore} ({products.length - shown})
+            </button>
+          )}
+        </>
       )}
 
       {!loading && <ContactCard t={t} />}

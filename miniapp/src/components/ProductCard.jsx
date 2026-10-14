@@ -3,7 +3,7 @@ import { money } from '../i18n';
 import { haptic } from '../telegram';
 import { useApp, useFav } from '../store';
 import Icon from './Icon';
-import { frameStyle } from '../framing';
+import { frameStyle, thumb } from '../framing';
 import { colorOf } from '../colors';
 
 export const PLACEHOLDER =
@@ -30,7 +30,7 @@ export default function ProductCard({ product, lang, t, onOpen, onQuickAdd, inde
   const urls = (product.images || []).map((i) => i.url).filter(Boolean);
   // Rasm ochilmasa — mahsulotning keyingi rasmi ko'rsatiladi
   const [imgIndex, setImgIndex] = useState(0);
-  const img = urls[imgIndex] || PLACEHOLDER;
+  const img = thumb(urls[imgIndex]) || PLACEHOLDER;
   const discount = discountOf(product);
   const available = inStock(product);
   const fav = useFav((s) => s.ids.includes(product.id));

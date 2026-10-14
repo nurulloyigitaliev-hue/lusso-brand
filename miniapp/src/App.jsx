@@ -6,6 +6,7 @@ import { haptic, showBackButton, isTelegram, openLink } from './telegram';
 import { hideSplash } from './splash';
 import { flyToCart } from './fx';
 import { isDecant } from './constants';
+import { filterCatalog } from './catalog';
 
 import Onboarding from './components/Onboarding';
 import BottomNav from './components/BottomNav';
@@ -46,7 +47,6 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [searchFocus, setSearchFocus] = useState(false);
 
-  const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [stories, setStories] = useState([]);
@@ -78,32 +78,38 @@ export default function App() {
   }, []);
 
   // ---------- Katalog ----------
+  // Butun katalog bir marta olinadi; kategoriya, brend, saralash va qidiruv
+  // telefonning o'zida bajariladi — har bosishda serverni kutib o'tirmaydi.
+  // Ilovaga qaytilganda (fon rejimidan) ro'yxat jimgina yangilanadi.
   useEffect(() => {
-    setLoading(true);
-    // Filtr qo'yilmagan bo'lsa — shu javob butun katalog sifatida ham saqlanadi
-    // (bosh sahifa, sevimlilar, upsell uchun)
-    const isFullList = category === 'all' && !search.trim() && !brand;
+    let lastLoad = 0;
+    const load = () => {
+      lastLoad = Date.now();
+      return api.catalog().then((res) => {
+        setAllProducts(res.products);
+        setCategories(res.categories);
+      });
+    };
 
-    const timer = setTimeout(
-      () => {
-        api
-          .catalog({ category, search, sort, brand })
-          .then((res) => {
-            setProducts(res.products);
-            setCategories(res.categories);
-            if (isFullList) setAllProducts(res.products);
-          })
-          .catch((e) => showToast(e.message))
-          .finally(() => {
-            setLoading(false);
-            hideSplash();
-          });
-      },
-      search ? 350 : 0
-    );
+    load()
+      .catch((e) => showToast(e.message))
+      .finally(() => {
+        setLoading(false);
+        hideSplash();
+      });
 
-    return () => clearTimeout(timer);
-  }, [category, search, sort, brand]);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastLoad > 60 * 1000) load().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const products = useMemo(
+    () => filterCatalog(allProducts, { category, search, sort, brand }),
+    [allProducts, category, search, sort, brand]
+  );
 
   // ---------- Telegram orqaga tugmasi ----------
   useEffect(() => {
@@ -273,7 +279,7 @@ export default function App() {
     );
   }
 
-  const catalogSource = allProducts.length ? allProducts : products;
+  const catalogSource = allProducts;
   // "Hammasi" ro'yxatida quyma atirlar ko'rinmaydi (qidiruvda topiladi)
   const catalogList = category === 'all' && !search.trim() ? products.filter((p) => !isDecant(p)) : products;
 
@@ -384,7 +390,7 @@ export default function App() {
             setStoryIndex(null);
             // Mahsulotdan yaratilgan story — link "product:<id>" ko'rinishida
             const pid = story?.link?.startsWith('product:') && Number(story.link.slice(8));
-            const prod = pid && (allProducts.length ? allProducts : products).find((p) => p.id === pid);
+            const prod = pid && allProducts.find((p) => p.id === pid);
             if (prod) return setSheet(prod);
             const cat = story?.link && categories.find((c) => c.slug === story.link);
             goCatalog(cat ? cat.slug : undefined);

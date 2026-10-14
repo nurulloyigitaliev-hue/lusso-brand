@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ProductCard, { onImgError, discountOf, PLACEHOLDER } from '../components/ProductCard';
-import { frameStyle } from '../framing';
+import { frameStyle, thumb } from '../framing';
 import Icon from '../components/Icon';
 import { money } from '../i18n';
 import { haptic } from '../telegram';
@@ -98,7 +98,7 @@ function Showcase({ items, lang, t, onOpen }) {
               </div>
               <div className="slide-img">
                 <img
-                  src={p.images?.[0]?.url || PLACEHOLDER}
+                  src={thumb(p.images?.[0]?.url, 720) || PLACEHOLDER}
                   alt=""
                   style={frameStyle(p.images?.[0]?.url)}
                   onError={onImgError}
@@ -208,7 +208,7 @@ export default function Home({
           {stories.map((s, i) => (
             <div className="story rise" style={{ '--i': i }} key={s.id} onClick={() => onStoryClick(i)}>
               <div className="story-ring">
-                <img src={s.imageUrl} alt="" onError={onImgError} />
+                <img src={thumb(s.imageUrl, 240)} alt="" onError={onImgError} />
               </div>
               <span>{lang === 'ru' ? s.titleRu : s.titleUz}</span>
             </div>
@@ -237,7 +237,7 @@ export default function Home({
               >
                 <div className="cat-img">
                   {catCover(c) ? (
-                    <img src={catCover(c)} alt="" style={frameStyle(catCover(c))} onError={onImgError} />
+                    <img src={thumb(catCover(c))} alt="" style={frameStyle(catCover(c))} onError={onImgError} />
                   ) : (
                     <span className="emo">{c.emoji}</span>
                   )}
