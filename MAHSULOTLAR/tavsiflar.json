@@ -219,5 +219,234 @@
     "variants": ["Oltin / binafsha", "Kumush / ko'k"],
     "descUz": "Gardishsiz to'rtburchak\nMedusa belgili dastalar\nGradient linza, UV400",
     "descRu": "Прямоугольные без оправы\nДужки с Медузой\nГрадиентные линзы, UV400"
+  },
+
+  "Adidas Yeezy Boost 350 V2 Core Black White": {
+    "brand": "Adidas",
+    "variants": [{ "label": "40", "stock": 2 }, { "label": "41", "stock": 2 }, { "label": "44", "stock": 1 }],
+    "descUz": "Rang: qora, oq chiziq\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: чёрный, белая полоса\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 350 V2 Granite": {
+    "brand": "Adidas",
+    "variants": [{ "label": "40", "stock": 2 }, { "label": "43", "stock": 3 }],
+    "descUz": "Rang: och kulrang, qora chiziq\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: светло-серый, чёрная полоса\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 350 V2 Static Reflective": {
+    "brand": "Adidas",
+    "variants": [{ "label": "41", "stock": 2 }, { "label": "43", "stock": 1 }, { "label": "44", "stock": 1 }],
+    "descUz": "Rang: oq, yorug'da yaltiraydi\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый, светоотражающий\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 350 V2 Beluga Reflective": {
+    "brand": "Adidas",
+    "variants": [{ "label": "41", "stock": 2 }],
+    "descUz": "Rang: kulrang, to'q sariq chiziq\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: серый, оранжевая полоса\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 350 V2 Ash Blue": {
+    "brand": "Adidas",
+    "variants": [{ "label": "40", "stock": 1 }],
+    "descUz": "Rang: ko'kimtir kulrang, qum rang chiziq\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: серо-голубой, бежевая полоса\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 350 V2 Static Black": {
+    "brand": "Adidas",
+    "variants": [{ "label": "41", "stock": 1 }],
+    "descUz": "Rang: butunlay qora\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: полностью чёрный\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 350 V2 Linen": {
+    "brand": "Adidas",
+    "variants": [{ "label": "41", "stock": 1 }],
+    "descUz": "Rang: och sariq (linen)\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: светло-жёлтый (linen)\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 350 V2 Earth": {
+    "brand": "Adidas",
+    "variants": [{ "label": "41", "stock": 1 }],
+    "descUz": "Rang: jigarrang (earth)\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: коричневый (earth)\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 350 V2 Tail Light": {
+    "brand": "Adidas",
+    "variants": [{ "label": "41", "stock": 1 }],
+    "descUz": "Rang: kulrang, to'q sariq belgi\nPrimeknit to'qima, Boost taglik — juda yengil\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: серый, оранжевая вставка\nТекстиль Primeknit, подошва Boost — очень лёгкие\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 700 V2 Vanta": {
+    "brand": "Adidas",
+    "variants": [{ "label": "44", "stock": 1 }],
+    "descUz": "Rang: butunlay qora\nZamsh va to'r, Boost taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: полностью чёрный\nЗамша и сетка, подошва Boost\nРазмеры по EU"
+  },
+  "Adidas Yeezy Boost 700 Inertia": {
+    "brand": "Adidas",
+    "variants": [{ "label": "43", "stock": 1 }],
+    "descUz": "Rang: kulrang, to'q sariq belgi\nZamsh va to'r, Boost taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: серый, оранжевая вставка\nЗамша и сетка, подошва Boost\nРазмеры по EU"
+  },
+  "Adidas Yeezy 700 V3 Kyanite": {
+    "brand": "Adidas",
+    "variants": [{ "label": "43", "stock": 1 }],
+    "descUz": "Rang: och ko'k / krem\nYengil, qulay taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: голубой / кремовый\nЛёгкая, удобная подошва\nРазмеры по EU"
+  },
+  "Nike Dunk Low Grey Fog": {
+    "brand": "Nike",
+    "variants": [{ "label": "42.5", "stock": 1 }],
+    "descUz": "Rang: oq / kulrang\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / серый\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Nike Dunk Low Team Red": {
+    "brand": "Nike",
+    "variants": [{ "label": "40", "stock": 1 }],
+    "descUz": "Rang: oq / to'q qizil\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / бордовый\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Air Jordan 1 Low Team Red": {
+    "brand": "Jordan",
+    "variants": [{ "label": "40", "stock": 1 }],
+    "descUz": "Rang: oq / to'q qizil\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / бордовый\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Nike Dunk Low Varsity Green": {
+    "brand": "Nike",
+    "variants": [{ "label": "41", "stock": 1 }],
+    "descUz": "Rang: oq / to'q yashil\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / тёмно-зелёный\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Nike Dunk Low Panda": {
+    "brand": "Nike",
+    "variants": [{ "label": "40", "stock": 1 }, { "label": "41", "stock": 2 }],
+    "descUz": "Rang: oq / qora\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / чёрный\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Nike Air Force 1 Low Flax": {
+    "brand": "Nike",
+    "variants": [{ "label": "43", "stock": 2 }],
+    "descUz": "Rang: qum rang (flax)\nNubuk, kauchuk taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: песочный (flax)\nНубук, каучуковая подошва\nРазмеры по EU"
+  },
+  "Nike Air Force 1 Low Utility White": {
+    "brand": "Nike",
+    "variants": [{ "label": "44", "stock": 1 }],
+    "descUz": "Rang: oq / qora\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / чёрный\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Nike Dunk Low Malachite": {
+    "brand": "Nike",
+    "variants": [{ "label": "44", "stock": 1 }],
+    "descUz": "Rang: krem / yashil\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: кремовый / зелёный\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Air Jordan 1 Low Travis Scott Mocha": {
+    "brand": "Jordan",
+    "variants": [{ "label": "43", "stock": 1 }],
+    "descUz": "Rang: qora / jigarrang\nZamsh va charm, teskari belgi\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: чёрный / коричневый\nЗамша и кожа, обратный свуш\nРазмеры по EU"
+  },
+  "Air Jordan 1 Low Travis Scott Fragment": {
+    "brand": "Jordan",
+    "variants": [{ "label": "40", "stock": 1 }],
+    "descUz": "Rang: oq / qora / ko'k\nCharm, teskari belgi\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / чёрный / синий\nКожа, обратный свуш\nРазмеры по EU"
+  },
+  "Air Jordan 1 Low Travis Scott Black Phantom": {
+    "brand": "Jordan",
+    "variants": [{ "label": "43", "stock": 1 }],
+    "descUz": "Rang: butunlay qora\nZamsh, teskari belgi\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: полностью чёрный\nЗамша, обратный свуш\nРазмеры по EU"
+  },
+  "Nike VaporWaffle sacai Villain Red": {
+    "brand": "Nike",
+    "variants": [{ "label": "40", "stock": 1 }],
+    "descUz": "Rang: bordo / yashil / kulrang\nIkki qavat belgi, yengil taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: бордовый / зелёный / серый\nДвойной свуш, лёгкая подошва\nРазмеры по EU"
+  },
+  "Nike VaporWaffle sacai Black White": {
+    "brand": "Nike",
+    "variants": [{ "label": "40", "stock": 1 }],
+    "descUz": "Rang: qora / oq\nIkki qavat belgi, yengil taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: чёрный / белый\nДвойной свуш, лёгкая подошва\nРазмеры по EU"
+  },
+  "Nike VaporWaffle sacai White Red": {
+    "brand": "Nike",
+    "variants": [{ "label": "44", "stock": 1 }],
+    "descUz": "Rang: oq / qizil / ko'k\nIkki qavat belgi, yengil taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / красный / синий\nДвойной свуш, лёгкая подошва\nРазмеры по EU"
+  },
+  "Nike Air Zoom Alphafly NEXT 2 Total Orange": {
+    "brand": "Nike",
+    "variants": [{ "label": "42", "stock": 1 }],
+    "descUz": "Rang: to'q sariq\nYugurish uchun, ZoomX taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: оранжевый\nДля бега, подошва ZoomX\nРазмеры по EU"
+  },
+  "Nike Motiva Dark Grey": {
+    "brand": "Nike",
+    "variants": [{ "label": "42.5", "stock": 1 }],
+    "descUz": "Rang: to'q kulrang / oq\nYurish uchun, yumshoq to'lqinli taglik\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: тёмно-серый / белый\nДля ходьбы, мягкая волнистая подошва\nРазмеры по EU"
+  },
+  "Gucci Screener Black White": {
+    "brand": "Gucci",
+    "variants": [{ "label": "43", "stock": 2 }, { "label": "44", "stock": 1 }],
+    "descUz": "Rang: qora / oq, yashil-qizil chiziq\nCharm, quti va sumka bilan\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: чёрный / белый, зелёно-красная полоса\nКожа, с коробкой и пакетом\nРазмеры по EU"
+  },
+  "Air Jordan 3 White Cement": {
+    "brand": "Jordan",
+    "variants": [{ "label": "40", "stock": 1 }],
+    "descUz": "Rang: oq / kulrang sement\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / серый «цемент»\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Jordan Legacy 312 Low White Grey": {
+    "brand": "Jordan",
+    "variants": [{ "label": "44", "stock": 1 }],
+    "descUz": "Rang: oq / kulrang / to'q ko'k\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / серый / тёмно-синий\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Air Jordan 1 High Dior": {
+    "brand": "Jordan",
+    "variants": [{ "label": "44", "stock": 1 }],
+    "descUz": "Rang: oq / kulrang, Dior naqshli belgi\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / серый, свуш с узором Dior\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Air Jordan 4 Military Black": {
+    "brand": "Jordan",
+    "variants": [{ "label": "40", "stock": 1 }],
+    "descUz": "Rang: oq / qora / kulrang\nCharm, klassik model\nO'lchamlar EU bo'yicha",
+    "descRu": "Цвет: белый / чёрный / серый\nКожа, классическая модель\nРазмеры по EU"
+  },
+  "Chanel Bleu de Chanel Parfum": {
+    "brand": "Chanel",
+    "variants": ["100 ml"],
+    "descUz": "100 ml · Parfum\nSitrus, sandal va kedr — erkaklar uchun klassika",
+    "descRu": "100 ml · Parfum\nЦитрус, сандал и кедр — мужская классика"
+  },
+  "Tiziana Terenzi Kirke": {
+    "brand": "Tiziana Terenzi",
+    "variants": ["100 ml"],
+    "descUz": "100 ml · Extrait de Parfum\nMevali-mushkli, shirin — uniseks\nJuda uzoq saqlanadi",
+    "descRu": "100 ml · Extrait de Parfum\nФруктово-мускусный, сладкий — унисекс\nОчень стойкий"
+  },
+  "Tom Ford Lost Cherry": {
+    "brand": "Tom Ford",
+    "variants": ["100 ml"],
+    "descUz": "100 ml · Eau de Parfum\nOlcha, bodom va likyor — shirin, kechki hid",
+    "descRu": "100 ml · Eau de Parfum\nВишня, миндаль и ликёр — сладкий, вечерний"
+  },
+  "Tom Ford Tobacco Vanille": {
+    "brand": "Tom Ford",
+    "variants": ["100 ml"],
+    "descUz": "100 ml · Eau de Parfum\nTamaki barglari va vanil — iliq, qishki hid",
+    "descRu": "100 ml · Eau de Parfum\nТабачный лист и ваниль — тёплый, зимний"
+  },
+  "Creed Absolu Aventus": {
+    "brand": "Creed",
+    "variants": ["100 ml"],
+    "descUz": "100 ml · Eau de Parfum\nAnanas, bergamot va yog'och — kuchli, erkakona",
+    "descRu": "100 ml · Eau de Parfum\nАнанас, бергамот и дерево — мощный, мужской"
   }
 }

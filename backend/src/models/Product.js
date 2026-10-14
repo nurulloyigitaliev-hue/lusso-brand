@@ -31,8 +31,11 @@ export const ProductModel = {
     if (sort === 'price_desc') orderBy = [{ price: 'desc' }];
     if (sort === 'new') orderBy = [{ createdAt: 'desc' }];
 
-    const products = await prisma.product.findMany({ where, include: withRelations, orderBy });
-    return products.map(withLiveImages);
+    const products = (await prisma.product.findMany({ where, include: withRelations, orderBy })).map(withLiveImages);
+    if (sort) return products;
+    // Standart tartib: ko'p qolganlar tepada, 1 ta qolganlar pastda
+    const left = (p) => p.variants.reduce((s, v) => s + Math.max(0, v.stock), 0);
+    return products.sort((a, b) => left(b) - left(a));
   },
 
   async byId(id) {

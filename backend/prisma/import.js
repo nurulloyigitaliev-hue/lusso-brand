@@ -246,7 +246,10 @@ async function saveToDb(products, deleteOld) {
       keepIds.push(existing.id);
       updated++;
     } else {
-      const sizes = p.cat === 'shoes' ? SHOE_SIZES : extra.variants?.length ? extra.variants : ['Standart'];
+      // tavsiflar.json dagi variant: "50 ml" yoki { "label": "42", "stock": 1 }
+      const defStock = p.cat === 'shoes' ? SHOE_STOCK : OTHER_STOCK;
+      const sizes = (extra.variants?.length ? extra.variants : p.cat === 'shoes' ? SHOE_SIZES : ['Standart'])
+        .map((s) => (typeof s === 'object' ? { label: String(s.label), stock: Number(s.stock ?? defStock) } : { label: s, stock: defStock }));
       // Quyma atir: 10 ml (nomidagi narx) va 20 ml (+10 000)
       const variants =
         p.cat === 'quyma'
@@ -254,11 +257,7 @@ async function saveToDb(products, deleteOld) {
               { label: '10 ml', stock: 50, extraPrice: 0, sortOrder: 0 },
               { label: '20 ml', stock: 50, extraPrice: 10000, sortOrder: 1 },
             ]
-          : sizes.map((label, i) => ({
-              label,
-              stock: p.cat === 'shoes' ? SHOE_STOCK : OTHER_STOCK,
-              sortOrder: i,
-            }));
+          : sizes.map((s, i) => ({ label: s.label, stock: s.stock, sortOrder: i }));
       const saved = await prisma.product.create({
         data: {
           nameUz: p.name,

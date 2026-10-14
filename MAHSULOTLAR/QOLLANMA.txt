@@ -40,3 +40,7 @@ QO'SHIMCHA
 - Oyoq kiyimga 240-285 o'lchamlar (har biridan 3 ta) avtomatik qo'shiladi,
   boshqalarga "Standart" (10 ta). Tavsif, ruscha nom, o'lchamlarni keyin
   admin paneldan o'zgartirish mumkin.
+- O'lcham va nechta qolganini tavsiflar.json da yozish mumkin:
+      "variants": [{ "label": "41", "stock": 2 }, { "label": "44", "stock": 1 }]
+- Do'konda mahsulotlar nechta qolganiga qarab chiqadi: ko'pi tepada,
+  1 ta qolganlar pastda.
