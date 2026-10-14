@@ -1,5 +1,7 @@
 // Bot logikalari: /start, til tanlash, telefon olish, menyu va xabarnomalar
-import { Keyboard, InlineKeyboard } from 'grammy';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { Keyboard, InlineKeyboard, InputFile } from 'grammy';
 import config from '../config/default.js';
 import { safeSend, safeSendPhoto, safeSendWithPhotos } from '../core/bot.js';
 import UserModel, { isWebUser } from '../models/User.js';
@@ -103,7 +105,7 @@ export async function mainMenuKeyboard(lang) {
   rows.push([InlineKeyboard.text(L.menuOrders, 'menu:orders')]);
   rows.push([
     InlineKeyboard.text(L.menuContact, 'menu:contact'),
-    InlineKeyboard.text(L.menuAbout, 'menu:about'),
+    InlineKeyboard.text(L.menuInstall, 'menu:install'),
   ]);
   rows.push([InlineKeyboard.text(L.menuLang, 'menu:lang')]);
 
@@ -169,10 +171,13 @@ export async function onLanguageChosen(ctx) {
 
 export async function onContact(ctx) {
   const phone = ctx.message.contact.phone_number;
+  const before = await UserModel.findByTelegramId(ctx.from.id).catch(() => null);
   const user = await UserModel.setPhone(ctx.from.id, phone);
   const L = t(user.language);
   // "Telefon yuborish" pastki klaviaturasi endi kerak emas — olib tashlaymiz
   await ctx.reply(L.phoneSaved, { reply_markup: { remove_keyboard: true } });
+  // Yangi mijoz: do'konni telefonga ilova qilib o'rnatish videolari
+  if (!before?.phone) await sendInstallGuide(ctx, user.language);
   await sendMainMenu(ctx, user.language);
 }
 
@@ -193,10 +198,7 @@ export async function onText(ctx) {
     return sendContact(ctx, L);
   }
 
-  if (text === L.menuAbout) {
-    const s = await SettingModel.get();
-    return ctx.reply(lang === 'ru' ? s.aboutRu : s.aboutUz);
-  }
+  if (text === L.menuInstall) return sendInstallGuide(ctx, lang);
 
   if (text === L.menuLang) {
     return ctx.reply(L.chooseLanguage, { reply_markup: langKeyboard() });
@@ -222,7 +224,46 @@ function sendContact(ctx, L) {
   });
 }
 
-// Asosiy menyudagi inline tugmalar bosilganda (Buyurtmalarim / Aloqa / Biz haqimizda / Til)
+// Ilovani o'rnatish: iPhone va Samsung videolari, ostida havola.
+// Video birinchi marta fayldan yuklanadi, keyin Telegram'dagi file_id orqali
+// bir zumda yuboriladi.
+const INSTALL_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../assets/install');
+const INSTALL_VIDEOS = [
+  { key: 'iphone', file: 'iphone.mp4', duration: 30, caption: 'installIphone' },
+  { key: 'samsung', file: 'samsung.mp4', duration: 29, caption: 'installAndroid' },
+];
+const installVideoIds = {};
+
+async function sendInstallVideo(ctx, v, caption) {
+  const extra = {
+    caption,
+    parse_mode: 'Markdown',
+    width: 720,
+    height: 1280,
+    duration: v.duration,
+    supports_streaming: true,
+  };
+  const cached = installVideoIds[v.key];
+  try {
+    const msg = await ctx.replyWithVideo(cached || new InputFile(path.join(INSTALL_DIR, v.file)), extra);
+    if (msg.video?.file_id) installVideoIds[v.key] = msg.video.file_id;
+  } catch (err) {
+    delete installVideoIds[v.key];
+    // Eskirgan file_id — fayldan qayta yuklaymiz
+    if (cached) return sendInstallVideo(ctx, v, caption);
+    console.error(`⚠️  O'rnatish videosi (${v.key}) yuborilmadi: ${err.message}`);
+  }
+}
+
+export async function sendInstallGuide(ctx, lang) {
+  const L = t(lang);
+  for (const v of INSTALL_VIDEOS) await sendInstallVideo(ctx, v, L[v.caption]);
+  // Havola alohida xabarda — videolar ostida, bosib turish qulay bo'lsin
+  const url = (await shopUrl()).replace(/([_*`\[])/g, '\\$1');
+  return ctx.reply(L.installLink(url), { parse_mode: 'Markdown' });
+}
+
+// Asosiy menyudagi inline tugmalar bosilganda (Buyurtmalarim / Aloqa / Ilovani o'rnatish / Til)
 export async function onMenuAction(ctx) {
   const user = await UserModel.findOrCreate({
     id: ctx.from.id,
@@ -242,6 +283,9 @@ export async function onMenuAction(ctx) {
     return sendContact(ctx, L);
   }
 
+  if (action === 'install') return sendInstallGuide(ctx, lang);
+
+  // Eski xabarlardagi "Biz haqimizda" tugmasi uchun
   if (action === 'about') {
     const s = await SettingModel.get();
     return ctx.reply(lang === 'ru' ? s.aboutRu : s.aboutUz);

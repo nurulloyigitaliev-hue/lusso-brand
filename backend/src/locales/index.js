@@ -9,9 +9,15 @@ export const texts = {
     menuShop: '🛍 Do\'konni ochish',
     menuOrders: '📦 Buyurtmalarim',
     menuContact: '📞 Aloqa',
-    menuAbout: 'ℹ️ Biz haqimizda',
+    menuInstall: "📲 Ilovani o'rnatish",
     menuLang: '🌐 Til / Язык',
     mainMenu: 'Asosiy menyu 👇',
+    installIphone:
+      "📱 *iPhone'da o'rnatish*\n\n1️⃣ Havolani *ustiga bosib turing*\n2️⃣ «Открыть в Safari» ni tanlang\n3️⃣ Pastdagi «Ulashish» tugmasi → «На экран «Домой»» → «Добавить»",
+    installAndroid:
+      "🤖 *Samsung / Android'da o'rnatish*\n\n1️⃣ Havolani *ustiga bosib turing*\n2️⃣ «Открыть в Chrome» ni tanlang\n3️⃣ Yuqoridagi ⋮ → «Добавить на главный экран» → «Установить»",
+    installLink: (url) =>
+      `📲 *Do'konni telefoningizga ilova qilib o'rnating!*\n\n👇 Shu havolani *ustiga bosib turing* va videodagidek o'rnatib oling:\n\n${url}\n\n⚠️ Havola Telegram ichida emas — iPhone'da *Safari*, Samsung'da *Chrome* orqali ochilishi kerak. Shundan keyin LUSSO telefoningiz ekranida ilova bo'lib turadi.`,
     noOrders: 'Sizda hali buyurtma yo\'q.\n\nDo\'konni ochib, birinchi buyurtmangizni bering 🛍',
     yourOrders: '📦 *Sizning buyurtmalaringiz:*',
     contact: (phone) =>
@@ -42,9 +48,15 @@ export const texts = {
     menuShop: '🛍 Открыть магазин',
     menuOrders: '📦 Мои заказы',
     menuContact: '📞 Связь',
-    menuAbout: 'ℹ️ О нас',
+    menuInstall: '📲 Как установить',
     menuLang: '🌐 Til / Язык',
     mainMenu: 'Главное меню 👇',
+    installIphone:
+      '📱 *Установка на iPhone*\n\n1️⃣ *Нажмите и удерживайте* ссылку\n2️⃣ Выберите «Открыть в Safari»\n3️⃣ Внизу «Поделиться» → «На экран «Домой»» → «Добавить»',
+    installAndroid:
+      '🤖 *Установка на Samsung / Android*\n\n1️⃣ *Нажмите и удерживайте* ссылку\n2️⃣ Выберите «Открыть в Chrome»\n3️⃣ Вверху ⋮ → «Добавить на главный экран» → «Установить»',
+    installLink: (url) =>
+      `📲 *Установите магазин на телефон как приложение!*\n\n👇 *Нажмите и удерживайте* эту ссылку и установите, как показано в видео:\n\n${url}\n\n⚠️ Ссылку нужно открыть не в Telegram, а в *Safari* (iPhone) или *Chrome* (Samsung). После этого LUSSO будет на экране телефона как приложение.`,
     noOrders: 'У вас пока нет заказов.\n\nОткройте магазин и сделайте первый заказ 🛍',
     yourOrders: '📦 *Ваши заказы:*',
     contact: (phone) =>
