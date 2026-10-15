@@ -5,7 +5,7 @@ import { useApp, useCart, useFav, cartLink, importCartFromUrl } from './store';
 import { haptic, showBackButton, isTelegram, openLink } from './telegram';
 import { hideSplash } from './splash';
 import { flyToCart } from './fx';
-import { isDecant } from './constants';
+import { isDecant, DECANT_MIN, decantQty } from './constants';
 import { filterCatalog } from './catalog';
 
 import Onboarding from './components/Onboarding';
@@ -154,10 +154,18 @@ export default function App() {
   }, [allProducts, category]);
 
   // ---------- Savat ----------
+  // Gramli atirlar kamida DECANT_MIN ta olinadi — yetmasa, nechta qolgani
+  const decantShortOf = (items) => {
+    const n = decantQty(items, allProducts);
+    return n > 0 && n < DECANT_MIN ? DECANT_MIN - n : 0;
+  };
+  const decantShort = decantShortOf(cart.items);
+
   const addToCart = (item, imgEl) => {
     cart.add(item);
     flyToCart(imgEl);
-    showToast(t.addedToCart);
+    const short = decantShortOf(useCart.getState().items);
+    showToast(short ? `${t.addedToCart} ${t.decantMore(short)}` : t.addedToCart);
   };
 
   // Kartadagi "+" — bitta variant bo'lsa darhol qo'shadi, bir nechta bo'lsa oynani ochadi
@@ -254,6 +262,11 @@ export default function App() {
   const orderInBrowser = isTelegram() && settings?.telegramOrders === false;
 
   const checkout = () => {
+    if (decantShort) {
+      haptic('error');
+      showToast(t.decantMin);
+      return;
+    }
     if (!orderInBrowser) {
       setScreen('checkout');
       return;
@@ -351,6 +364,7 @@ export default function App() {
             onToggleUpsell={toggleUpsell}
             goCatalog={() => goCatalog()}
             orderInBrowser={orderInBrowser}
+            decantShort={decantShort}
             onCheckout={checkout}
           />
         )}

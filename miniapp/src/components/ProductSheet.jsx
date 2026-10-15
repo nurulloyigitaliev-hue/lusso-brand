@@ -8,6 +8,7 @@ import ImageViewer from './ImageViewer';
 import { ContactCard } from './ContactSheet';
 import { frameStyle, thumb as small } from '../framing';
 import { colorOf } from '../colors';
+import { isDecant } from '../constants';
 
 // Koreya o'lchami (mm) → EU / US
 const SIZE_TABLE = [
@@ -168,6 +169,7 @@ export default function ProductSheet({ product, lang, t, onClose, onAdd }) {
               )}
             </div>
             <div className="sheet-ship">🚚 {t.freeShipping}</div>
+            {isDecant(product) && <div className="sheet-min">🧪 {t.decantMin}</div>}
 
             {variants.length > 0 && !(variants.length === 1 && variants[0].label === 'Standart') && (
               <div>

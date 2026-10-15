@@ -6,6 +6,7 @@ import ProductModel from '../models/Product.js';
 import OrderModel from '../models/Order.js';
 import SettingModel from '../models/Setting.js';
 import { cached, clearCache } from '../core/cache.js';
+import { DECANT_SLUG, DECANT_MIN } from '../core/decants.js';
 import { notifyOrderCreated, notifyReceipt, notifyAdmins } from './botController.js';
 
 // Mini App ochilganda mijozni ro'yxatdan o'tkazish
@@ -80,6 +81,7 @@ export async function createOrder(req, res) {
     // Narxlar serverda qayta hisoblanadi (mijoz yuborgan narxga ishonilmaydi)
     const built = [];
     let subtotal = 0;
+    let decants = 0; // gramli atirlar soni
 
     for (const raw of items) {
       const product = await ProductModel.byId(raw.productId);
@@ -98,6 +100,8 @@ export async function createOrder(req, res) {
         });
       }
 
+      if (product.category?.slug === DECANT_SLUG) decants += qty;
+
       built.push({
         productId: product.id,
         variantId: variant?.id || null,
@@ -113,6 +117,9 @@ export async function createOrder(req, res) {
     }
 
     if (!built.length) return res.status(400).json({ error: 'Mahsulotlar topilmadi' });
+    if (decants > 0 && decants < DECANT_MIN) {
+      return res.status(400).json({ error: `Gramli atirlardan kamida ${DECANT_MIN} ta xarid qilishingiz kerak` });
+    }
 
     // Yetkazib berish doim bepul — pochta puli mahsulot narxiga kiritilgan
     const deliveryFee = 0;
