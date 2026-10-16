@@ -2,8 +2,10 @@
 export const texts = {
   uz: {
     chooseLanguage: 'Tilni tanlang / Выберите язык',
+    // Xush kelibsiz rasmining izohi (HTML) — name oldindan zararsizlantirilgan bo'ladi
     welcome: (name) =>
-      `Assalomu alaykum, ${name}! 👋\n\n*LUSSO BRAND KR* — Koreyadagi erkaklar uchun original oyoq kiyim 👟, ko'zoynak 🕶 va atirlar 🧴 do'koni.\n\nDavom etish uchun telefon raqamingizni yuboring.`,
+      `Assalom alekum${name ? `, ${name}` : ''}🤝\n\n🙋‍♂️<b>Lusso_brand.kr</b>\nKoreyada sifatli ishonchli\nKrasofkalar👟\nAtirlar🍋‍🟩\nOchkilar😎\n\n🚚Pochtasi Bepul va Tez💨\n\n🏪Do’kondagi mahsulotlarni koring👇`,
+    askPhone: "📱 Buyurtmalar bo'yicha bog'lanishimiz uchun telefon raqamingizni yuboring — pastdagi tugmani bosing 👇",
     sendPhone: '📱 Telefon raqamni yuborish',
     phoneSaved: 'Rahmat! ✅\n\nEndi do\'konni ochib, xaridni boshlashingiz mumkin 👇',
     menuShop: '🛍 Do\'konni ochish',
@@ -11,7 +13,6 @@ export const texts = {
     menuContact: '📞 Aloqa',
     menuInstall: "📲 Ilovani o'rnatish",
     menuLang: '🌐 Til / Язык',
-    mainMenu: 'Asosiy menyu 👇',
     installIphone:
       "📱 *iPhone'da o'rnatish*\n\n1️⃣ Havolani *ustiga bosib turing*\n2️⃣ «Открыть в Safari» ni tanlang\n3️⃣ Pastdagi «Ulashish» tugmasi → «На экран «Домой»» → «Добавить»",
     installAndroid:
@@ -42,7 +43,8 @@ export const texts = {
   ru: {
     chooseLanguage: 'Tilni tanlang / Выберите язык',
     welcome: (name) =>
-      `Здравствуйте, ${name}! 👋\n\n*LUSSO BRAND KR* — магазин мужской обуви 👟, очков 🕶 и парфюма 🧴 в Корее.\n\nОтправьте номер телефона, чтобы продолжить.`,
+      `Здравствуйте${name ? `, ${name}` : ''}🤝\n\n🙋‍♂️<b>Lusso_brand.kr</b>\nКачественные и надёжные товары в Корее\nКроссовки👟\nПарфюм🍋‍🟩\nОчки😎\n\n🚚Доставка бесплатная и быстрая💨\n\n🏪Смотрите товары в магазине👇`,
+    askPhone: '📱 Чтобы мы могли связаться с вами по заказу, отправьте номер телефона — нажмите кнопку ниже 👇',
     sendPhone: '📱 Отправить номер',
     phoneSaved: 'Спасибо! ✅\n\nТеперь можно открыть магазин 👇',
     menuShop: '🛍 Открыть магазин',
@@ -50,7 +52,6 @@ export const texts = {
     menuContact: '📞 Связь',
     menuInstall: '📲 Как установить',
     menuLang: '🌐 Til / Язык',
-    mainMenu: 'Главное меню 👇',
     installIphone:
       '📱 *Установка на iPhone*\n\n1️⃣ *Нажмите и удерживайте* ссылку\n2️⃣ Выберите «Открыть в Safari»\n3️⃣ Внизу «Поделиться» → «На экран «Домой»» → «Добавить»',
     installAndroid:

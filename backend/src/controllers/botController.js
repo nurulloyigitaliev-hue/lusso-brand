@@ -102,20 +102,58 @@ export async function mainMenuKeyboard(lang) {
   const rows = [];
 
   if (isHttps(url)) rows.push([InlineKeyboard.webApp(L.menuShop, url)]);
-  rows.push([InlineKeyboard.text(L.menuOrders, 'menu:orders')]);
+  rows.push([InlineKeyboard.text(L.menuInstall, 'menu:install')]);
   rows.push([
+    InlineKeyboard.text(L.menuOrders, 'menu:orders'),
     InlineKeyboard.text(L.menuContact, 'menu:contact'),
-    InlineKeyboard.text(L.menuInstall, 'menu:install'),
   ]);
-  rows.push([InlineKeyboard.text(L.menuLang, 'menu:lang')]);
+  rows.push(langKeyboard().inline_keyboard[0]);
 
   return InlineKeyboard.from(rows);
 }
 
-// Asosiy menyuni bitta xabar bilan yuboradi
+// Xush kelibsiz rasmi (logo). Birinchi marta fayldan yuklanadi, keyin
+// Telegram'dagi file_id orqali bir zumda yuboriladi.
+const WELCOME_PHOTO = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../assets/welcome/banner.jpg'
+);
+let welcomePhotoId = null;
+
+const escapeHtml = (s) =>
+  String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function welcomeCaption(ctx, lang) {
+  return t(lang).welcome(escapeHtml(ctx.from?.first_name || ''));
+}
+
+// Asosiy menyu: logo rasmi + salomlashish matni + tugmalar, bitta xabarda
 async function sendMainMenu(ctx, lang) {
-  const L = t(lang);
-  return ctx.reply(L.mainMenu, { reply_markup: await mainMenuKeyboard(lang) });
+  const extra = {
+    caption: welcomeCaption(ctx, lang),
+    parse_mode: 'HTML',
+    reply_markup: await mainMenuKeyboard(lang),
+  };
+  const cached = welcomePhotoId;
+  try {
+    const msg = await ctx.replyWithPhoto(cached || new InputFile(WELCOME_PHOTO), extra);
+    const fileId = msg.photo?.[msg.photo.length - 1]?.file_id;
+    if (fileId) welcomePhotoId = fileId;
+    return msg;
+  } catch (err) {
+    welcomePhotoId = null;
+    // Eskirgan file_id — fayldan qayta yuklaymiz
+    if (cached) return sendMainMenu(ctx, lang);
+    console.error(`⚠️  Xush kelibsiz rasmi yuborilmadi: ${err.message}`);
+    // Rasm ketmasa ham menyu matn ko'rinishida yetib borsin
+    const { caption, ...rest } = extra;
+    return ctx.reply(caption, rest);
+  }
+}
+
+// Telefon raqamini so'rash (pastki "Telefon raqamni yuborish" tugmasi bilan)
+function askPhone(ctx, lang) {
+  return ctx.reply(t(lang).askPhone, { reply_markup: phoneKeyboard(lang) });
 }
 
 function phoneKeyboard(lang) {
@@ -135,38 +173,45 @@ export async function onStart(ctx) {
     firstName: ctx.from.first_name,
     lastName: ctx.from.last_name,
     username: ctx.from.username,
+    // Yangi mijoz: Telegram'i ruscha bo'lsa — bot ham ruscha boshlaydi
+    language: ctx.from.language_code === 'ru' ? 'ru' : 'uz',
   });
 
-  if (!user.phone) {
-    await ctx.reply(t(user.language).chooseLanguage, { reply_markup: langKeyboard() });
-    return;
-  }
-
   await sendMainMenu(ctx, user.language);
+  if (!user.phone) await askPhone(ctx, user.language);
 }
 
 export async function onLanguageChosen(ctx) {
   const lang = ctx.callbackQuery.data.split(':')[1];
-  await UserModel.findOrCreate({
+  const before = await UserModel.findOrCreate({
     id: ctx.from.id,
     firstName: ctx.from.first_name,
     lastName: ctx.from.last_name,
     username: ctx.from.username,
   });
-  const user = await UserModel.setLanguage(ctx.from.id, lang);
-  const L = t(lang);
+  const chosen = lang === 'uz' ? "Til: O'zbekcha ✅" : 'Язык: Русский ✅';
 
-  await ctx.answerCallbackQuery();
-  await ctx.editMessageText(lang === 'uz' ? "Til: O'zbekcha ✅" : 'Язык: Русский ✅');
-
-  if (!user.phone) {
-    await ctx.reply(L.welcome(ctx.from.first_name || ''), {
-      parse_mode: 'Markdown',
-      reply_markup: phoneKeyboard(lang),
+  // Logo rasmi ostidagi til tugmasi — o'sha xabarning o'zi yangi tilga o'tadi
+  if (ctx.callbackQuery.message?.photo) {
+    await ctx.answerCallbackQuery({ text: chosen });
+    if (before.language === lang) return;
+    const user = await UserModel.setLanguage(ctx.from.id, lang);
+    await ctx.editMessageCaption({
+      caption: welcomeCaption(ctx, lang),
+      parse_mode: 'HTML',
+      reply_markup: await mainMenuKeyboard(lang),
     });
-  } else {
-    await sendMainMenu(ctx, lang);
+    // Pastki "Telefon yuborish" tugmasi ham yangi tilda bo'lsin
+    if (!user.phone) await askPhone(ctx, lang);
+    return;
   }
+
+  // Eski xabarlardagi alohida "Tilni tanlang" xabari
+  const user = await UserModel.setLanguage(ctx.from.id, lang);
+  await ctx.answerCallbackQuery();
+  await ctx.editMessageText(chosen);
+  await sendMainMenu(ctx, lang);
+  if (!user.phone) await askPhone(ctx, lang);
 }
 
 export async function onContact(ctx) {
