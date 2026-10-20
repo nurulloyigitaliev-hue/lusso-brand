@@ -4,6 +4,13 @@ import { removeUploads } from '../core/uploads.js';
 
 const PENDING = ['PENDING_PAYMENT', 'RECEIPT_SENT']; // to'lov tekshirilishi kerak
 const PAID = ['CONFIRMED', 'SHIPPED', 'DELIVERED']; // tushumga kiradi
+const CLOSED = ['SHIPPED', 'DELIVERED', 'CANCELLED']; // manzilni endi o'zgartirib bo'lmaydi
+
+// Admin "Ma'lumot xato kiritildi" bosgan va buyurtma hali jo'natilmagan bo'lsa —
+// mijoz manzilni qayta kirita oladi
+export function canFixAddress(order) {
+  return Boolean(order?.addressFix) && !CLOSED.includes(order.status);
+}
 
 function generateOrderNumber() {
   const d = new Date();
@@ -43,6 +50,20 @@ export const OrderModel = {
     return prisma.order.findUnique({ where: { id: Number(id) }, include: { user: true } });
   },
 
+  async byNumber(orderNumber) {
+    return prisma.order.findUnique({ where: { orderNumber }, include: { user: true } });
+  },
+
+  // Botga yuborilgan chek qaysi buyurtmaniki: avval to'lanmagan, bo'lmasa
+  // cheki tekshirilayotgan eng oxirgi buyurtma (chekni qayta yuborgan bo'lsa)
+  async awaitingReceipt(userId) {
+    for (const status of PENDING) {
+      const order = await prisma.order.findFirst({ where: { userId, status }, orderBy: { createdAt: 'desc' } });
+      if (order) return order;
+    }
+    return null;
+  },
+
   async listAll({ status } = {}) {
     return prisma.order.findMany({
       where: status && status !== 'all' ? { status } : undefined,
@@ -63,6 +84,33 @@ export const OrderModel = {
     return prisma.order.update({
       where: { id: Number(id) },
       data: { status, ...extra },
+      include: { user: true },
+    });
+  },
+
+  // Botdagi "Tasdiqlash" tugmasi: faqat to'lov hali tasdiqlanmagan bo'lsa o'zgaradi.
+  // Ikki admin bir vaqtda bossa ham mijozga bitta xabar boradi. Tasdiqlanmasa — null.
+  async confirmPayment(id) {
+    const { count } = await prisma.order.updateMany({
+      where: { id: Number(id), status: { in: PENDING } },
+      data: { status: 'CONFIRMED' },
+    });
+    return count ? OrderModel.byId(id) : null;
+  },
+
+  async requestFix(id) {
+    return prisma.order.update({
+      where: { id: Number(id) },
+      data: { addressFix: true },
+      include: { user: true },
+    });
+  },
+
+  // Mijoz manzilni qayta kiritdi — so'rov yopiladi
+  async fixAddress(id, data) {
+    return prisma.order.update({
+      where: { id: Number(id) },
+      data: { ...data, addressFix: false },
       include: { user: true },
     });
   },

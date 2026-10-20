@@ -34,6 +34,7 @@ router.get('/stats', admin.stats);
 router.get('/orders', admin.listOrders);
 router.get('/orders/:id', admin.getOrder);
 router.patch('/orders/:id', admin.updateOrder);
+router.post('/orders/:id/request-fix', admin.requestFix);
 
 // Savdoni tozalash: buyurtmalar va cheklar (mahsulot, ombor, mijozlar qoladi)
 router.get('/sales', admin.salesSummary);

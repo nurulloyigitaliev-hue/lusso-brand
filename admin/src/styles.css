@@ -558,6 +558,32 @@ tbody tr:hover {
   font-weight: 600;
 }
 
+/* "Ma'lumot xato kiritildi" — holat emas, mijozga so'rov: qizil bilan ajralib turadi */
+.filter.fix-btn {
+  background: #fdecec;
+  border-color: rgba(220, 38, 38, 0.35);
+  color: var(--red);
+  font-weight: 600;
+}
+
+.pill.fix-wait {
+  margin-left: 6px;
+  background: #fdecec;
+  color: var(--red);
+  white-space: nowrap;
+}
+
+.fix-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fdecec;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 /* ============ MODAL ============ */
 .modal-backdrop {
   position: fixed;

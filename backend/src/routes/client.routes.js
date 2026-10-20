@@ -30,6 +30,7 @@ router.get('/settings', cart.getSettings);
 router.post('/orders', guestOrderLimiter, cart.createOrder);
 router.get('/orders', cart.myOrders);
 router.post('/orders/:id/receipt', uploadImage.single('receipt'), cart.uploadReceipt);
+router.post('/orders/:id/address', cart.fixAddress);
 
 router.get('/addresses', cart.myAddresses);
 router.post('/addresses', cart.addAddress);

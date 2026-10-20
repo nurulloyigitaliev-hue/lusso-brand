@@ -91,6 +91,7 @@ export const api = {
 
   orders: (status) => request('/orders' + (status && status !== 'all' ? `?status=${status}` : '')),
   updateOrder: (id, data) => request(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  requestFix: (id) => request(`/orders/${id}/request-fix`, { method: 'POST' }),
 
   salesSummary: () => request('/sales'),
   clearSales: (maxId) =>

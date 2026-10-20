@@ -28,6 +28,9 @@ const STATUSES = [
 
 const LABEL = Object.fromEntries(STATUSES.map((s) => [s.key, s.label]));
 
+// Jo'natilgan / bekor qilingan buyurtma manzilini endi so'rab bo'lmaydi
+const CLOSED = ['SHIPPED', 'DELIVERED', 'CANCELLED'];
+
 export default function OrdersPage({ toast, onCountChange }) {
   const [status, setStatus] = useState('all');
   const [orders, setOrders] = useState([]);
@@ -69,6 +72,23 @@ export default function OrdersPage({ toast, onCountChange }) {
       const updated = await api.updateOrder(open.id, data);
       setOpen(updated);
       toast('Saqlandi ✅ Mijozga bot orqali xabar yuborildi');
+      load();
+    } catch (e) {
+      toast(e.message, true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // "Ma'lumot xato kiritildi" — mijozga manzilni qayta kiritish so'rovi boradi
+  const requestFix = async () => {
+    if (!confirm("Mijozga \"Manzilni qayta kiriting\" xabari yuborilsinmi?")) return;
+    setSaving(true);
+    try {
+      const { order, sent } = await api.requestFix(open.id);
+      setOpen(order);
+      if (sent) toast("Yuborildi ✅ Mijoz manzilni botda yoki ilovada qayta kiritadi");
+      else toast(`Mijozga bot orqali yetib bormadi — telefon qiling: ${order.phone}`, true);
       load();
     } catch (e) {
       toast(e.message, true);
@@ -152,6 +172,7 @@ export default function OrdersPage({ toast, onCountChange }) {
                   </td>
                   <td>
                     <span className={`pill ${o.status}`}>{LABEL[o.status]}</span>
+                    {o.addressFix && <span className="pill fix-wait">⚠️ Manzil kutilmoqda</span>}
                   </td>
                   <td className="muted nowrap">
                     {new Date(o.createdAt).toLocaleString('ru-RU', {
@@ -218,6 +239,11 @@ export default function OrdersPage({ toast, onCountChange }) {
                 <div className="info-row">
                   <span>Izoh</span>
                   <b style={{ textAlign: 'right' }}>{open.comment}</b>
+                </div>
+              )}
+              {open.addressFix && (
+                <div className="fix-note">
+                  ⚠️ «Ma'lumot xato kiritildi» belgilangan — mijozdan to'g'ri manzil kutilmoqda
                 </div>
               )}
             </div>
@@ -301,6 +327,11 @@ export default function OrdersPage({ toast, onCountChange }) {
                 {s.label}
               </button>
             ))}
+            {!CLOSED.includes(open.status) && (
+              <button className="filter fix-btn" disabled={saving} onClick={requestFix}>
+                ⚠️ Ma'lumot xato kiritildi
+              </button>
+            )}
           </div>
         </Modal>
       )}

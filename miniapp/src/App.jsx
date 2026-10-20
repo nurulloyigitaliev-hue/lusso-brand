@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import api from './api';
 import { dict } from './i18n';
 import { useApp, useCart, useFav, cartLink, importCartFromUrl } from './store';
-import { haptic, showBackButton, isTelegram, openLink } from './telegram';
+import { haptic, showBackButton, isTelegram, openLink, closeApp } from './telegram';
 import { hideSplash } from './splash';
 import { flyToCart } from './fx';
 import { isDecant, DECANT_MIN, decantQty } from './constants';
@@ -23,9 +23,13 @@ import Checkout from './pages/Checkout';
 import Payment from './pages/Payment';
 import Profile from './pages/Profile';
 import Orders from './pages/Orders';
+import AddressFix from './pages/AddressFix';
 
 // Telegram ilovasidan savat bilan kelingan bo'lsa — savat sahifasidan boshlaymiz
 const cameWithCart = !isTelegram() && importCartFromUrl();
+
+// Botdagi "📲 Ilovada qayta kiritish" tugmasi: ?fix=<buyurtma id> — manzil oynasi darhol ochiladi
+const fixFromBot = Number(new URLSearchParams(window.location.search).get('fix')) || null;
 
 export default function App() {
   const { lang, setLang, user, setUser, settings, setSettings } = useApp();
@@ -41,7 +45,8 @@ export default function App() {
     }
   });
   const [tab, setTab] = useState(cameWithCart ? 'cart' : 'home');
-  const [screen, setScreen] = useState(null); // checkout | payment | orders
+  const [screen, setScreen] = useState(fixFromBot ? 'fix' : null); // checkout | payment | orders | fix
+  const [fix, setFix] = useState(fixFromBot ? { id: fixFromBot, from: null } : null); // qaysi buyurtma manzili
   const [sheet, setSheet] = useState(null);
   const [storyIndex, setStoryIndex] = useState(null);
   const [toast, setToast] = useState(null);
@@ -114,11 +119,11 @@ export default function App() {
   // ---------- Telegram orqaga tugmasi ----------
   useEffect(() => {
     if (storyIndex !== null) return showBackButton(() => setStoryIndex(null));
-    if (screen) return showBackButton(() => setScreen(null));
+    if (screen) return showBackButton(() => setScreen(screen === 'fix' ? fix?.from || null : null));
     if (sheet) return showBackButton(() => setSheet(null));
     if (tab !== 'home') return showBackButton(() => setTab('home'));
     return undefined;
-  }, [screen, sheet, tab, storyIndex]);
+  }, [screen, sheet, tab, storyIndex, fix]);
 
   // Bo'lim almashganda tepaga
   useEffect(() => {
@@ -451,7 +456,32 @@ export default function App() {
         />
       )}
 
-      {screen === 'orders' && <Orders t={t} lang={lang} onBack={() => setScreen(null)} onReorder={reorder} />}
+      {screen === 'orders' && (
+        <Orders
+          t={t}
+          lang={lang}
+          onBack={() => setScreen(null)}
+          onReorder={reorder}
+          onFix={(id) => {
+            setFix({ id, from: 'orders' });
+            setScreen('fix');
+          }}
+        />
+      )}
+
+      {screen === 'fix' && fix && (
+        <AddressFix
+          key={fix.id}
+          t={t}
+          orderId={fix.id}
+          onBack={() => setScreen(fix.from)}
+          onDone={() => {
+            // Botdan kelgan bo'lsa — ilova yopiladi, mijoz botda tasdiq xabarini ko'radi
+            if (!fix.from && isTelegram()) closeApp();
+            setScreen(fix.from);
+          }}
+        />
+      )}
 
       <ContactSheet t={t} />
 
