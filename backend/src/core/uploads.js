@@ -26,6 +26,17 @@ export function rememberUpload(name) {
   stored.add(name);
 }
 
+// Serverning o'zi olgan rasmni (masalan, botga yuborilgan chekni) /uploads ga
+// saqlaydi: diskka va bazaga. "/uploads/<nom>" qaytaradi.
+export async function saveUpload(data, ext, mime) {
+  const name = `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
+  await fs.promises.mkdir(config.uploadsDir, { recursive: true });
+  await fs.promises.writeFile(path.join(config.uploadsDir, name), data);
+  await prisma.uploadedFile.create({ data: { name, mime, data } });
+  rememberUpload(name);
+  return `/uploads/${name}`;
+}
+
 export function isImageAvailable(url) {
   if (typeof url !== 'string' || !url.startsWith('/uploads/')) return Boolean(url);
   const name = url.split('#')[0].split('?')[0].replace('/uploads/', '');

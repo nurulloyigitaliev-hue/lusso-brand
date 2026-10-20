@@ -141,6 +141,16 @@ export const dict = {
     tracking: 'Kuzatuv · 운송장',
     trackBtn: 'Kuzatish',
     reorder: 'Yana olish',
+    fixBanner: "Manzil xato kiritilgan — qayta kiriting",
+    fixBtn: 'Kiritish',
+
+    // Manzilni qayta kiritish
+    fixTitle: 'Manzilni to‘g‘rilash',
+    fixIntro: (no) => `Buyurtma ${no} manzili xato yoki to‘liq emas. To‘g‘ri manzilni kiriting. Avvalgi manzil: `,
+    fixStreetBad: "Shahar, tuman, ko'cha va uy raqamini to'liq yozing",
+    fixSave: 'Manzilni saqlash',
+    fixSaved: 'Manzil yangilandi',
+    fixClosed: "Bu buyurtma manzilini endi o'zgartirib bo'lmaydi",
 
     // Profil
     profile: 'Profil',
@@ -298,6 +308,15 @@ export const dict = {
     tracking: 'Трек · 운송장',
     trackBtn: 'Отследить',
     reorder: 'Повторить',
+    fixBanner: 'Адрес указан неверно — введите заново',
+    fixBtn: 'Ввести',
+
+    fixTitle: 'Исправить адрес',
+    fixIntro: (no) => `Адрес заказа ${no} неверный или неполный. Введите правильный адрес. Прежний адрес: `,
+    fixStreetBad: 'Укажите город, район, улицу и номер дома',
+    fixSave: 'Сохранить адрес',
+    fixSaved: 'Адрес обновлён',
+    fixClosed: 'Адрес этого заказа уже нельзя изменить',
 
     profile: 'Профиль',
     welcomeMember: 'Добро пожаловать!',

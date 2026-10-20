@@ -14,7 +14,7 @@ export function formatPhone(v) {
   return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
 }
 
-const phoneOk = (v) => /^01[016789]\d{7,8}$/.test(String(v).replace(/\D/g, ''));
+export const phoneOk = (v) => /^01[016789]\d{7,8}$/.test(String(v).replace(/\D/g, ''));
 
 export default function Checkout({ t, user, items, settings, onBack, onCreated }) {
   const [form, setForm] = useState({

@@ -3,11 +3,18 @@ import config from '../config/default.js';
 import prisma from '../database/connection.js';
 import UserModel from '../models/User.js';
 import ProductModel from '../models/Product.js';
-import OrderModel from '../models/Order.js';
+import OrderModel, { canFixAddress } from '../models/Order.js';
 import SettingModel from '../models/Setting.js';
 import { cached, clearCache } from '../core/cache.js';
 import { DECANT_SLUG, DECANT_MIN } from '../core/decants.js';
-import { notifyOrderCreated, notifyReceipt, notifyAdmins } from './botController.js';
+import {
+  notifyOrderCreated,
+  notifyReceipt,
+  notifyAdmins,
+  notifyAdminsReceipt,
+  notifyAddressFixed,
+  addressLooksOk,
+} from './botController.js';
 
 // Mini App ochilganda mijozni ro'yxatdan o'tkazish
 export async function auth(req, res) {
@@ -186,7 +193,36 @@ export async function uploadReceipt(req, res) {
   const updated = await OrderModel.attachReceipt(order.id, url);
 
   notifyReceipt(updated).catch(() => {});
+  notifyAdminsReceipt(updated).catch(() => {});
   res.json({ ok: true, receiptUrl: url, order: updated });
+}
+
+// Admin "Ma'lumot xato kiritildi" bosgan buyurtmaga to'g'ri manzilni kiritish
+export async function fixAddress(req, res) {
+  const user = await UserModel.findOrCreate(req.tgUser);
+  const order = await prisma.order.findFirst({
+    where: { id: Number(req.params.id), userId: user.id },
+    include: { user: true },
+  });
+  if (!order) return res.status(404).json({ error: 'Buyurtma topilmadi' });
+  if (!canFixAddress(order)) {
+    return res.status(400).json({ error: "Bu buyurtma manzilini endi o'zgartirib bo'lmaydi" });
+  }
+
+  const clean = (v, max) => String(v ?? '').trim().slice(0, max);
+  const data = {
+    customerName: clean(req.body.customerName, 100) || order.customerName,
+    phone: clean(req.body.phone, 30) || order.phone,
+    street: clean(req.body.street, 300),
+    detail: clean(req.body.detail, 200) || null,
+  };
+  if (!addressLooksOk(data.street)) {
+    return res.status(400).json({ error: "Manzilni to'liq kiriting: shahar, tuman, ko'cha va uy raqami" });
+  }
+
+  const updated = await OrderModel.fixAddress(order.id, data);
+  notifyAddressFixed(updated, order).catch(() => {});
+  res.json(updated);
 }
 
 export async function myOrders(req, res) {
