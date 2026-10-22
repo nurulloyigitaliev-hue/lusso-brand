@@ -42,6 +42,7 @@ qayta qurish uchun. Natija: funksiyalar bir xil, lekin dizayn, matnlar va
 {{EGA_TELEGRAM}}      = masalan: https://t.me/nova_admin
 {{ALOQA_TELEFON}}     = masalan: 010-1234-5678    (WhatsApp + Telegram + qo'ng'iroq)
 {{ISH_VAQTI}}         = masalan: Har kuni 10:00 — 22:00 (Koreya vaqti)
+{{INSTAGRAM}}         = masalan: https://www.instagram.com/nova_store.kr/   (bo'lmasa — yo'q)
 {{BANK_NOMI}}         = masalan: KB Kookmin Bank
 {{HISOB_RAQAM}}       = masalan: 123456-01-234567
 {{QABUL_QILUVCHI}}    = masalan: NOVA STORE   (예금주)
@@ -84,10 +85,10 @@ Variant turlari:
 ### E. Maxsus qoidalar (ixtiyoriy)
 
 ```
-{{MAXSUS_BOLIM}}      = yo'q  YOKI  nomi + izoh + narx qoidasi
+{{MAXSUS_BOLIM}}      = yo'q  YOKI  nomi + izoh + narx qoidasi + eng kam xarid soni
                         (LUSSO'da "Gramli atirlar": umumiy ro'yxat va tavsiyalarda ko'rinmaydi,
                          faqat o'z bo'limida; tepasida namunaviy rasmlar galereyasi + qisqa izoh;
-                         10 ml asosiy narx, 20 ml qo'shimcha narx bilan)
+                         10 ml asosiy narx, 20 ml qo'shimcha narx bilan; kamida 3 ta olinadi)
 {{UPSELL_QOIDASI}}    = masalan: "savatda sumka bo'lsa — eng arzon aksessuarni taklif qil,
                          aks holda katalogdagi eng arzon mahsulotni"
 {{KAM_QOLDI}}         = 3   (shundan kam qolsa "Faqat N ta qoldi" va admin ogohlantirishi)
@@ -143,6 +144,7 @@ Tanlamasangiz `AI tanlasin` deb yozing — AI tanlaydi va tanlovini README'ga yo
 BREND/
 ├── logo.png              shaffof fon, kamida 1024×1024 (splash, bosh sahifa, bot)
 ├── logo-oq.png           ixtiyoriy — to'q fon ustida ishlatish uchun
+├── xush-kelibsiz.jpg     botdagi /start banneri (gorizontal, ~1280×720, logo bilan)
 ├── ikonka.png            kvadrat 1024×1024 — 64/180/192/512 px ikonkalar shundan yasaladi
 ├── story/                1080×1920, 3–6 ta (birinchi storylar)
 ├── kategoriya/<slug>.jpg ixtiyoriy — kategoriya plitkasi (bo'lmasa birinchi mahsulot rasmi)
@@ -239,7 +241,8 @@ loyiha/
   (bepul serverda disk vaqtinchalik; disk faqat kesh).
 - **Order**: orderNumber (`{{BUYURTMA_PREFIKS}}-YYMMDD-XXXX`), items (JSON: productId, variantId,
   name, variant, price, qty, image), subtotal, deliveryFee, total, status, customerName, phone,
-  manzil maydonlari, comment, receiptUrl, trackingNumber, adminNote.
+  manzil maydonlari, comment, receiptUrl, trackingNumber, adminNote, addressFix (admin "Ma'lumot
+  xato kiritildi" bosgan — mijozdan to'g'ri manzil kutilmoqda).
 - **OrderStatus**: PENDING_PAYMENT → RECEIPT_SENT → CONFIRMED → SHIPPED → DELIVERED, yoki CANCELLED.
 - **Story**: imageUrl, titleUz, titleRu, link (`product:<id>`, kategoriya yoki URL), isActive, sortOrder.
 - **Broadcast**: text, imageUrl, buttonText, buttonUrl, sentCount, failCount.
@@ -255,13 +258,19 @@ loyiha/
 - **Mijoz API** (`/api/...`): `GET /access` (himoyasiz — brauzer ruxsati va bot havolasi); qolganlari
   Telegram `initData` HMAC tekshiruvi bilan: auth, language, catalog, products/:id, stories,
   bestsellers (buyurtmalar `items` JSON'idan), settings (faqat ochiq maydonlar — parol va xizmat
-  manzillarisiz), orders (yaratish, mening buyurtmalarim, chek yuklash), addresses.
+  manzillarisiz), orders (yaratish, mening buyurtmalarim, chek yuklash, `orders/:id/address` —
+  admin so'ragan buyurtmaga to'g'ri manzil kiritish), addresses.
 - **Katalog** butunligicha bir marta beriladi va **qolgan zaxira bo'yicha** tartiblanadi (ko'pi tepada,
   tugaganlar pastda); filtr/saralash/qidiruv telefonning o'zida.
 - **Buyurtma**: narxlar serverda qayta hisoblanadi (mijoz yuborgan narxga ishonilmaydi); zaxira
-  yetarliligi tekshiriladi va kamaytiriladi; telefon va manzil saqlanadi; yetkazish `{{YETKAZISH}}`.
+  yetarliligi tekshiriladi va kamaytiriladi; `{{MAXSUS_BOLIM}}` eng kam soni yetmasa buyurtma
+  qabul qilinmaydi; telefon va manzil saqlanadi; yetkazish `{{YETKAZISH}}`.
+- **Manzilni qayta kiritish** faqat `addressFix` belgilangan va hali jo'natilmagan (SHIPPED /
+  DELIVERED / CANCELLED emas) buyurtmada mumkin; manzil to'liqligi tekshiriladi (kamida 6 belgi
+  va uy raqami); mijozga tasdiq, adminlarga eski va yangi manzil bilan xabar.
 - **Admin API** (`/api/admin/...`): health (serverni uyg'otish), login, keyin JWT bilan: stats,
-  orders (ro'yxat / bitta / holat), sales summary + savdoni tozalash, products CRUD (+ kategoriyadagi
+  orders (ro'yxat / bitta / holat / `request-fix` — "Ma'lumot xato kiritildi", mijozga bot orqali
+  yetib bordimi-yo'qmi qaytariladi), sales summary + savdoni tozalash, products CRUD (+ kategoriyadagi
   o'rni), stock (ko'p variant qoldig'ini birdan yangilash), categories CRUD, stories, users (qidiruv),
   broadcast (+ tarix), settings, upload (multer, faqat rasm, 8 MB).
 - Admin har qanday o'zgartirish kiritsa — mijozlar uchun xotira keshi darhol tozalanadi.
@@ -287,16 +296,34 @@ loyiha/
 
 ### 3.5. Telegram bot (grammY)
 
-- `/start` → til tanlash (inline) → salomlashish (brend tavsifi bilan) → telefon raqam (request_contact) → asosiy menyu.
-- Asosiy menyu: Do'konni ochish (web_app), Buyurtmalarim, Aloqa (`{{ALOQA_TELEFON}}`, `{{ISH_VAQTI}}`),
-  **Ilovani o'rnatish** (iPhone va Samsung videolari + bosib turiladigan do'kon havolasi; video
-  `file_id` keshlanadi), Til.
+- `/start` → **bitta xabar**: `BREND/xush-kelibsiz.jpg` banneri + salomlashish (ism bilan, brend
+  tavsifi, yetkazish sharti; HTML, ism zararsizlantiriladi) + asosiy menyu tugmalari. Yangi mijozning
+  tili Telegram tilidan olinadi (ru → ruscha, aks holda uz). Telefon saqlanmagan bo'lsa — alohida
+  xabarda pastki "Telefon raqamni yuborish" (request_contact) tugmasi bilan so'raladi.
+- Asosiy menyu — **faqat inline tugmalar** (pastki web_app klaviaturasi iOS'da initData'ni bo'sh
+  yuborishi mumkin): Do'konni ochish (web_app) · **Ilovani o'rnatish** (iPhone va Samsung videolari +
+  bosib turiladigan do'kon havolasi) · Buyurtmalarim | Aloqa · Instagram (`{{INSTAGRAM}}`) · UZ | RU.
+  Til tugmasi **o'sha xabarning o'zini** yangi tilga o'giradi (yangi xabar yubormaydi).
+- Aloqa: `{{ALOQA_TELEFON}}`, `{{ISH_VAQTI}}`, WhatsApp / Telegram / Instagram tugmalari.
+- Banner va video Telegram'ga bir marta fayldan yuklanadi, keyin `file_id` keshidan; `file_id`
+  eskirsa fayldan qayta; rasm ketmasa menyu matn holida yuboriladi.
+- **Chek botga**: mijoz chekni ilovaga emas, botga rasm (yoki rasm-fayl) qilib yuborsa — eng oxirgi
+  to'lanmagan buyurtmasiga biriktiriladi (fayl disk + bazaga saqlanadi); buyurtma topilmasa —
+  aloqa ma'lumoti bilan javob.
+- **Chekni botda tasdiqlash**: chek (ilovadan ham, botdan ham) adminlarga **rasm bilan** keladi —
+  buyurtma qisqacha + "✅ Tasdiqlash" tugmasi. Bosilsa: status CONFIRMED, mijozga xabar, admin
+  xabaridagi tugma olinib "Tasdiqlandi — <admin ismi>" yoziladi. Buyurtma allaqachon boshqa holatda
+  bo'lsa — joriy holat ko'rsatiladi. Tugma faqat adminlar uchun ishlaydi.
+- **Manzilni qayta kiritish**: admin "Ma'lumot xato kiritildi" bossa mijozga xabar — kiritilgan
+  manzil va ikki tugma: "Manzilni qayta kiriting" (botga bitta xabar qilib yozadi, misol bilan;
+  to'liq bo'lmasa qayta so'raladi; 1 soat kutiladi, server qayta ishga tushsa bot xabariga
+  reply orqali topiladi) va "Ilovada qayta kiritish" (Mini App `?fix=<id>` bilan ochiladi).
 - Admin buyruqlari: `/admin PAROL` (o'zini admin qilish), `/panel` (panelni web_app tugmasi bilan
   ochish; `/panel https://...` — manzilni almashtirish), `/narxlar` (farqni ko'rsatish) va
   `/narxlar ha` (yozish), `/id`.
 - Buyurtma yaratilganda: mijozga — raqam, summa, bank rekvizitlari; adminlarga — mijoz, telefon,
   manzil, mahsulotlar, summa + "Admin panelni ochish" tugmasi. Chek yuklanganda — mijozga
-  "chek qabul qilindi, tekshirgach xabar beramiz".
+  "chek qabul qilindi" (buyurtma raqami bilan), adminlarga — quyidagi tasdiqlash xabari.
 - Status o'zgarganda mijozga avtomatik xabar (tasdiqlandi / jo'natildi + kuzatuv raqami /
   yetkazildi / bekor qilindi) + "Savol berish" tugmasi (`{{EGA_TELEGRAM}}`).
 - Rassilka — barcha bloklanmagan Telegram mijozlariga (web_ mijozlarga emas), rasm va tugma bilan.
@@ -329,12 +356,15 @@ loyiha/
   surish, ikki marta bosish), brend, nom, narx, tejash summasi, variant tanlash (1-D turi bo'yicha,
   `oyoq-mm`/`kiyim` uchun o'lcham jadvali), rang variantida har rangning o'z rasmi (rasmlar soni =
   variantlar soni), "Faqat N ta qoldi" (`{{KAM_QOLDI}}`), tavsif ro'yxat ko'rinishida, "Savatga qo'shish".
+  `{{MAXSUS_BOLIM}}` mahsulotida eng kam xarid soni haqida eslatma.
 - **Variant rangi**: admin tanlagan HEX, bo'lmasa nomidan taxmin (uz/ru/en/ko rang so'zlari).
 - **Rasm ramkasi**: URL oxiridagi `#z=1.3&x=50&y=40&fit=c` dan kattalik/joylashuv — admin tanlagan
   kadr hamma joyda bir xil.
 - **Sevimlilar** — telefonda saqlanadi (zustand persist).
 - **Savat**: miqdor +/−, o'chirish, yetkazish sharti (`{{YETKAZISH}}`; chegara bo'lsa progress),
   **upsell** (`{{UPSELL_QOIDASI}}`, bitta bosish bilan qo'shish/olib tashlash), jami, "Rasmiylashtirish".
+  Savatda `{{MAXSUS_BOLIM}}` mahsulotlari eng kam sondan oz bo'lsa — rasmiylashtirish tugmasi o'chadi
+  va "kamida N ta xarid qilishingiz kerak" yozuvi chiqadi.
   `TELEGRAM_ORDERS=false` bo'lsa — "Saytda buyurtma berish".
 - **Checkout**: bosqich indikatori; ism, telefon (`{{TELEFON_FORMATI}}` avtomatik formatlanadi va
   tekshiriladi), manzil (`{{MANZIL_MAYDONLARI}}`), "Manzilni eslab qolish", izoh, yetkazish haqida
@@ -343,6 +373,11 @@ loyiha/
   summa — har biri nusxa olish tugmasi bilan; chek skrinshotini yuklash; "Keyinroq to'layman".
 - **Buyurtmalarim**: status, 4 qadamli jarayon (To'lov → Tasdiq → Jo'natildi → Yetdi), mahsulot
   rasmlari, kuzatuv raqami + "Kuzatish" (`{{KUZATUV_HAVOLASI}}`), "Yana olish" (hammasini savatga qaytaradi).
+  Admin manzilni qayta so'ragan buyurtmada — "Manzil xato kiritilgan — qayta kiriting" ogohlantirishi va tugma.
+- **Manzilni to'g'rilash ekrani**: botdagi "Ilovada qayta kiritish" (`?fix=<id>` — ilova to'g'ridan-to'g'ri
+  shu ekranda ochiladi) yoki Buyurtmalarim'dan. Ism, telefon (`{{TELEFON_FORMATI}}`), manzil
+  (`{{MANZIL_MAYDONLARI}}`) eski qiymatlar bilan to'ldirilgan; saqlangach muvaffaqiyat holati.
+  Buyurtma jo'natilgan/bekor qilingan bo'lsa — "endi o'zgartirib bo'lmaydi".
 - **Profil** (DNK 15): ism, `{{AZOLIK_NOMI}}`, Buyurtmalarim, Sevimlilar (soni), til, aloqa,
   yetkazish va to'lov ma'lumoti, "Biz haqimizda", versiya.
 - **Aloqa oynasi** (ilovaning istalgan joyidan ochiladi): WhatsApp, Telegram, qo'ng'iroq,
@@ -372,6 +407,10 @@ Ombor · Story / Kategoriya · Mijozlar · Rassilka · Sozlamalar · Chiqish (Te
   3 s kutadi; faqat ko'rsatilgan oxirgi buyurtmagacha o'chadi; mahsulot, zaxira, mijozlarga tegilmaydi).
 - **Buyurtmalar**: status filtri; modalda mijoz, telefon, manzil, mahsulotlar (rasmni kattalashtirish),
   chek rasmi, kuzatuv raqami maydoni, holatni o'zgartirish (mijozga avtomatik xabar).
+  **"Ma'lumot xato kiritildi"** tugmasi (jo'natilmagan buyurtmalarda; tasdiq so'raladi) — mijozga
+  manzilni qayta kiritish so'rovi ketadi; ro'yxatda "Manzil kutilmoqda" belgisi, modalda eslatma.
+  Mijozga bot orqali yetib bormasa (saytdan buyurtma bergan yoki botni bloklagan) — "telefon qiling:
+  <raqam>" ogohlantirishi.
 - **Mahsulotlar**: ro'yxat + yaratish/tahrirlash: rasmlar (bir nechtasini tanlash, sudrab tartiblash,
   havola qo'yish, asosiy qilish, har rasm uchun **ramka muharriri** — ramkada surish + kattalik +
   "to'liq ko'rinsin"), nomi uz/ru, brend, kategoriya va undagi o'rni, narx, eski narx, Faol, NEW,
@@ -407,14 +446,21 @@ Ombor · Story / Kategoriya · Mijozlar · Rassilka · Sozlamalar · Chiqish (Te
 
 1. Mijoz mahsulot → variant → savat.
 2. Ism, telefon, manzil → Tasdiqlash.
-3. Bank rekvizitlari → bank o'tkazmasi → chek rasmini yuklaydi (RECEIPT_SENT).
-4. Bot: mijozga raqam va rekvizitlar, adminga yangi buyurtma.
-5. Admin chekni ko'rib Tasdiqlaydi → kuzatuv raqamini kiritib Jo'natildi qiladi → mijozga avtomatik xabar.
+3. Bank rekvizitlari → bank o'tkazmasi → chek rasmini ilovada yuklaydi **yoki botga tashlaydi** (RECEIPT_SENT).
+4. Bot: mijozga raqam va rekvizitlar, adminga yangi buyurtma; chek kelganda adminga chek rasmi + "✅ Tasdiqlash".
+5. Admin botda (yoki panelda) Tasdiqlaydi → kuzatuv raqamini kiritib Jo'natildi qiladi → mijozga avtomatik xabar.
+6. Manzil xato bo'lsa: admin "Ma'lumot xato kiritildi" → mijoz botda yoki ilovada to'g'ri manzilni
+   kiritadi → adminga eski/yangi manzil bilan xabar.
 
 ### 3.10. Topshirishdan oldin tekshiruv
 
 Funksiyalar:
-- [ ] `/start` → til → telefon → menyu; "Ilovani o'rnatish" videolari keladi.
+- [ ] `/start` → banner + menyu bitta xabarda; til tugmasi shu xabarni o'giradi; telefon alohida
+      so'raladi; "Ilovani o'rnatish" videolari va Instagram tugmasi ishlaydi.
+- [ ] Chek botga rasm qilib tashlansa buyurtmaga biriktiriladi; adminga rasm + "Tasdiqlash" keladi,
+      bosilganda mijozga xabar ketadi.
+- [ ] "Ma'lumot xato kiritildi" → mijoz manzilni botda ham, ilovada ham kirita oladi; admin xabar oladi.
+- [ ] `{{MAXSUS_BOLIM}}` eng kam soni: savatda ham, serverda ham tekshiriladi.
 - [ ] Katalog: kategoriya, brend, qidiruv, saralash; zaxira bo'yicha tartib.
 - [ ] Mahsulot oynasi: variant, rang rasmi, o'lcham jadvali, to'liq ekran zoom.
 - [ ] Savat → upsell → checkout → to'lov → chek yuklash; bot xabarlari mijozga va adminga.
@@ -441,10 +487,13 @@ A yo'li bilan qurilganda shu joylarning **hammasi** yangi brendga almashtiriladi
 | Do'kon nomi, standart parol, standart panel manzili, ega Telegram, JWT kaliti | `backend/src/config/default.js` |
 | Bazadagi standart sozlamalar (nom, bank, "Biz haqimizda") | `backend/prisma/schema.prisma` → `Setting`, `backend/prisma/seed.js` |
 | Boshlang'ich mahsulotlar va kategoriyalar | `backend/prisma/seed.js`, `backend/src/core/categoryNames.js` |
-| Maxsus bo'lim (gramli atirlar) | `backend/src/core/decants.js`, `miniapp/src/constants.js` (`DECANT_SLUG`) |
+| Maxsus bo'lim (gramli atirlar) va eng kam soni | `backend/src/core/decants.js` (`DECANT_MIN`), `miniapp/src/constants.js` (`DECANT_SLUG`, `DECANT_MIN`) |
+| Buyurtma raqami prefiksi (`LS-`) | `backend/src/models/Order.js` (yaratish), `backend/src/controllers/botController.js` (`ORDER_NO`) |
 | Narxlar jadvali | `backend/src/core/prices.js` |
 | Papkadan yuklash (brendlar ro'yxati, o'lchamlar, zaxira) | `backend/prisma/import.js`, `MAHSULOTLAR/QOLLANMA.txt`, `MAHSULOTLAR/tavsiflar.json` |
-| Bot matnlari | `backend/src/locales/index.js` |
+| Bot matnlari, Instagram havolasi | `backend/src/locales/index.js` (`INSTAGRAM_URL`; matnlar ichida aloqa raqami ham bor) |
+| Botdagi aloqa raqami | `backend/src/controllers/botController.js` (`CONTACT_PHONE`, `PHONE_INTL`) |
+| /start banneri | `backend/assets/welcome/banner.jpg` |
 | "Ilovani o'rnatish" videolari | `backend/assets/install/iphone.mp4`, `samsung.mp4` |
 | Muhit o'zgaruvchilari namunasi | `backend/.env.example` |
 | Aloqa telefoni, WhatsApp/Telegram havolalari | `miniapp/src/constants.js` |
