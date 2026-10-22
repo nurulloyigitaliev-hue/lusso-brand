@@ -9,6 +9,9 @@ import {
   onPanelCommand,
   onPricesCommand,
   onIdCommand,
+  onPhoto,
+  onReceiptConfirm,
+  onFixStart,
 } from '../controllers/botController.js';
 
 export function registerBotHandlers(bot) {
@@ -30,7 +33,16 @@ export function registerBotHandlers(bot) {
 
   bot.callbackQuery(/^menu:(orders|contact|install|about|lang)$/, onMenuAction);
 
+  // Admin: chek xabaridagi "✅ Tasdiqlash"
+  bot.callbackQuery(/^rcpt:ok:(\d+)$/, onReceiptConfirm);
+
+  // Mijoz: "✍️ Manzilni qayta kiriting"
+  bot.callbackQuery(/^fix:(\d+)$/, onFixStart);
+
   bot.on('message:contact', onContact);
+
+  // To'lov cheki botga rasm (yoki rasm-fayl) qilib yuborilganda
+  bot.on(['message:photo', 'message:document'], onPhoto);
 
   bot.on('message:text', onText);
 

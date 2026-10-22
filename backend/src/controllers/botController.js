@@ -5,11 +5,12 @@ import { Keyboard, InlineKeyboard, InputFile } from 'grammy';
 import config from '../config/default.js';
 import { safeSend, safeSendPhoto, safeSendWithPhotos } from '../core/bot.js';
 import UserModel, { isWebUser } from '../models/User.js';
-import OrderModel from '../models/Order.js';
+import OrderModel, { canFixAddress } from '../models/Order.js';
 import SettingModel from '../models/Setting.js';
 import { applyPrices } from '../core/prices.js';
 import { clearCache } from '../core/cache.js';
-import { t, money } from '../locales/index.js';
+import { saveUpload } from '../core/uploads.js';
+import { t, money, INSTAGRAM_URL } from '../locales/index.js';
 
 const STATUS_LABEL = {
   PENDING_PAYMENT: { uz: "⏳ To'lov kutilmoqda", ru: '⏳ Ожидает оплаты' },
@@ -102,20 +103,59 @@ export async function mainMenuKeyboard(lang) {
   const rows = [];
 
   if (isHttps(url)) rows.push([InlineKeyboard.webApp(L.menuShop, url)]);
-  rows.push([InlineKeyboard.text(L.menuOrders, 'menu:orders')]);
+  rows.push([InlineKeyboard.text(L.menuInstall, 'menu:install')]);
   rows.push([
+    InlineKeyboard.text(L.menuOrders, 'menu:orders'),
     InlineKeyboard.text(L.menuContact, 'menu:contact'),
-    InlineKeyboard.text(L.menuInstall, 'menu:install'),
   ]);
-  rows.push([InlineKeyboard.text(L.menuLang, 'menu:lang')]);
+  rows.push([InlineKeyboard.url(L.menuInstagram, INSTAGRAM_URL)]);
+  rows.push(langKeyboard().inline_keyboard[0]);
 
   return InlineKeyboard.from(rows);
 }
 
-// Asosiy menyuni bitta xabar bilan yuboradi
+// Xush kelibsiz rasmi (logo). Birinchi marta fayldan yuklanadi, keyin
+// Telegram'dagi file_id orqali bir zumda yuboriladi.
+const WELCOME_PHOTO = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../assets/welcome/banner.jpg'
+);
+let welcomePhotoId = null;
+
+const escapeHtml = (s) =>
+  String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function welcomeCaption(ctx, lang) {
+  return t(lang).welcome(escapeHtml(ctx.from?.first_name || ''));
+}
+
+// Asosiy menyu: logo rasmi + salomlashish matni + tugmalar, bitta xabarda
 async function sendMainMenu(ctx, lang) {
-  const L = t(lang);
-  return ctx.reply(L.mainMenu, { reply_markup: await mainMenuKeyboard(lang) });
+  const extra = {
+    caption: welcomeCaption(ctx, lang),
+    parse_mode: 'HTML',
+    reply_markup: await mainMenuKeyboard(lang),
+  };
+  const cached = welcomePhotoId;
+  try {
+    const msg = await ctx.replyWithPhoto(cached || new InputFile(WELCOME_PHOTO), extra);
+    const fileId = msg.photo?.[msg.photo.length - 1]?.file_id;
+    if (fileId) welcomePhotoId = fileId;
+    return msg;
+  } catch (err) {
+    welcomePhotoId = null;
+    // Eskirgan file_id — fayldan qayta yuklaymiz
+    if (cached) return sendMainMenu(ctx, lang);
+    console.error(`⚠️  Xush kelibsiz rasmi yuborilmadi: ${err.message}`);
+    // Rasm ketmasa ham menyu matn ko'rinishida yetib borsin
+    const { caption, ...rest } = extra;
+    return ctx.reply(caption, rest);
+  }
+}
+
+// Telefon raqamini so'rash (pastki "Telefon raqamni yuborish" tugmasi bilan)
+function askPhone(ctx, lang) {
+  return ctx.reply(t(lang).askPhone, { reply_markup: phoneKeyboard(lang) });
 }
 
 function phoneKeyboard(lang) {
@@ -135,38 +175,46 @@ export async function onStart(ctx) {
     firstName: ctx.from.first_name,
     lastName: ctx.from.last_name,
     username: ctx.from.username,
+    // Yangi mijoz: Telegram'i ruscha bo'lsa — bot ham ruscha boshlaydi
+    language: ctx.from.language_code === 'ru' ? 'ru' : 'uz',
   });
 
-  if (!user.phone) {
-    await ctx.reply(t(user.language).chooseLanguage, { reply_markup: langKeyboard() });
-    return;
-  }
-
+  pendingFix.delete(String(ctx.from.id));
   await sendMainMenu(ctx, user.language);
+  if (!user.phone) await askPhone(ctx, user.language);
 }
 
 export async function onLanguageChosen(ctx) {
   const lang = ctx.callbackQuery.data.split(':')[1];
-  await UserModel.findOrCreate({
+  const before = await UserModel.findOrCreate({
     id: ctx.from.id,
     firstName: ctx.from.first_name,
     lastName: ctx.from.last_name,
     username: ctx.from.username,
   });
-  const user = await UserModel.setLanguage(ctx.from.id, lang);
-  const L = t(lang);
+  const chosen = lang === 'uz' ? "Til: O'zbekcha ✅" : 'Язык: Русский ✅';
 
-  await ctx.answerCallbackQuery();
-  await ctx.editMessageText(lang === 'uz' ? "Til: O'zbekcha ✅" : 'Язык: Русский ✅');
-
-  if (!user.phone) {
-    await ctx.reply(L.welcome(ctx.from.first_name || ''), {
-      parse_mode: 'Markdown',
-      reply_markup: phoneKeyboard(lang),
+  // Logo rasmi ostidagi til tugmasi — o'sha xabarning o'zi yangi tilga o'tadi
+  if (ctx.callbackQuery.message?.photo) {
+    await ctx.answerCallbackQuery({ text: chosen });
+    if (before.language === lang) return;
+    const user = await UserModel.setLanguage(ctx.from.id, lang);
+    await ctx.editMessageCaption({
+      caption: welcomeCaption(ctx, lang),
+      parse_mode: 'HTML',
+      reply_markup: await mainMenuKeyboard(lang),
     });
-  } else {
-    await sendMainMenu(ctx, lang);
+    // Pastki "Telefon yuborish" tugmasi ham yangi tilda bo'lsin
+    if (!user.phone) await askPhone(ctx, lang);
+    return;
   }
+
+  // Eski xabarlardagi alohida "Tilni tanlang" xabari
+  const user = await UserModel.setLanguage(ctx.from.id, lang);
+  await ctx.answerCallbackQuery();
+  await ctx.editMessageText(chosen);
+  await sendMainMenu(ctx, lang);
+  if (!user.phone) await askPhone(ctx, lang);
 }
 
 export async function onContact(ctx) {
@@ -192,6 +240,10 @@ export async function onText(ctx) {
   const L = t(lang);
   const text = ctx.message.text;
 
+  // "Manzilni qayta kiriting" bosilgan bo'lsa — shu xabar yangi manzil
+  const fixOrder = await fixTarget(ctx, user);
+  if (fixOrder) return saveFixedAddress(ctx, user, fixOrder, text);
+
   if (text === L.menuOrders) return sendMyOrders(ctx, user);
 
   if (text === L.menuContact) {
@@ -207,18 +259,20 @@ export async function onText(ctx) {
   return sendMainMenu(ctx, lang);
 }
 
-// Aloqa: raqam + WhatsApp / Telegram tugmalari
+// Aloqa: raqam + WhatsApp / Telegram / Instagram tugmalari
 const CONTACT_PHONE = '010-5790-4777';
 const PHONE_INTL = '821057904777';
 function sendContact(ctx, L) {
   return ctx.reply(L.contact(CONTACT_PHONE), {
     parse_mode: 'Markdown',
+    link_preview_options: { is_disabled: true },
     reply_markup: {
       inline_keyboard: [
         [
           { text: '💬 WhatsApp', url: `https://wa.me/${PHONE_INTL}` },
           { text: '✈️ Telegram', url: `https://t.me/+${PHONE_INTL}` },
         ],
+        [{ text: L.menuInstagram, url: INSTAGRAM_URL }],
       ],
     },
   });
@@ -296,6 +350,151 @@ export async function onMenuAction(ctx) {
   }
 }
 
+// ---------------- TO'LOV CHEKI (botga rasm yuborilganda) ----------------
+
+// Mijoz chekni ilovaga emas, to'g'ridan-to'g'ri botga rasm qilib yuborsa —
+// eng oxirgi to'lanmagan buyurtmasiga biriktiriladi va adminlarga boradi
+export async function onPhoto(ctx) {
+  if (ctx.chat?.type !== 'private') return;
+  const doc = ctx.message.document;
+  if (doc && !String(doc.mime_type || '').startsWith('image/')) return;
+
+  const user = await UserModel.findOrCreate({
+    id: ctx.from.id,
+    firstName: ctx.from.first_name,
+    lastName: ctx.from.last_name,
+    username: ctx.from.username,
+  });
+  const L = t(user.language);
+
+  const order = await OrderModel.awaitingReceipt(user.id);
+  if (!order) return ctx.reply(L.receiptNoOrder, { parse_mode: 'Markdown' });
+
+  let url;
+  try {
+    url = await downloadToUploads(ctx, ctx.message.photo?.at(-1)?.file_id || doc.file_id, doc?.mime_type);
+  } catch (err) {
+    console.error(`⚠️  Chek rasmini yuklab bo'lmadi: ${err.message}`);
+    return ctx.reply(L.receiptFailed);
+  }
+
+  const updated = await OrderModel.attachReceipt(order.id, url);
+  await ctx.reply(L.receiptFor(updated.orderNumber), { parse_mode: 'Markdown' });
+  notifyAdminsReceipt(updated).catch(() => {});
+}
+
+// Telegram'dagi faylni /uploads ga (disk + baza) saqlaydi — admin panelda chek ko'rinsin
+async function downloadToUploads(ctx, fileId, mime = 'image/jpeg') {
+  const file = await ctx.api.getFile(fileId);
+  const res = await fetch(`https://api.telegram.org/file/bot${config.botToken}/${file.file_path}`);
+  if (!res.ok) throw new Error(`Telegram fayli: HTTP ${res.status}`);
+  const ext = path.extname(file.file_path || '').toLowerCase() || '.jpg';
+  return saveUpload(Buffer.from(await res.arrayBuffer()), ext, mime);
+}
+
+// Admin chekni ko'rgan xabardagi "✅ Tasdiqlash" tugmasi
+export async function onReceiptConfirm(ctx) {
+  if (!(await isAdminUser(ctx.from.id))) {
+    return ctx.answerCallbackQuery({ text: 'Bu tugma faqat adminlar uchun', show_alert: true });
+  }
+
+  const id = Number(ctx.match[1]);
+  const order = await OrderModel.confirmPayment(id);
+
+  if (order) {
+    notifyStatus(order).catch(() => {});
+    await ctx.answerCallbackQuery({ text: '✅ Tasdiqlandi — mijozga xabar yuborildi' });
+    return closeReceiptMessage(ctx, order, `✅ *Tasdiqlandi* — ${md(ctx.from.first_name || 'admin')}`);
+  }
+
+  // Allaqachon tasdiqlangan / bekor qilingan yoki o'chirilgan buyurtma
+  const current = await OrderModel.byId(id);
+  const status = current ? STATUS_LABEL[current.status]?.uz || current.status : "o'chirilgan";
+  await ctx.answerCallbackQuery({ text: `Bu buyurtma holati: ${status}`, show_alert: true });
+  if (current) return closeReceiptMessage(ctx, current, `ℹ️ Holati: *${status}*`);
+  return ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch(() => {});
+}
+
+// Chek xabaridagi tugmani olib, ostiga natijani yozib qo'yadi
+async function closeReceiptMessage(ctx, order, footer) {
+  const text = receiptCaption(order, footer);
+  const extra = { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [] } };
+  try {
+    if (ctx.callbackQuery.message?.photo) await ctx.editMessageCaption({ caption: text, ...extra });
+    else await ctx.editMessageText(text, extra);
+  } catch {
+    /* xabar eskirgan yoki o'zgarmagan */
+  }
+}
+
+// ---------------- MANZILNI QAYTA KIRITISH ----------------
+
+// "✍️ Manzilni qayta kiriting" bosgan mijozlar: telegramId → { orderId, at }
+const pendingFix = new Map();
+const FIX_TTL = 60 * 60 * 1000; // 1 soat
+const ORDER_NO = /LS-\d{6}-\d{4}/;
+
+export async function onFixStart(ctx) {
+  const user = await UserModel.findOrCreate({
+    id: ctx.from.id,
+    firstName: ctx.from.first_name,
+    lastName: ctx.from.last_name,
+    username: ctx.from.username,
+  });
+  const L = t(user.language);
+  const order = await OrderModel.byId(ctx.match[1]);
+  await ctx.answerCallbackQuery();
+
+  if (!order || order.userId !== user.id || !canFixAddress(order)) {
+    return ctx.reply(L.fixClosed, { parse_mode: 'Markdown' });
+  }
+
+  pendingFix.set(String(ctx.from.id), { orderId: order.id, at: Date.now() });
+  return ctx.reply(L.fixAsk(order.orderNumber), {
+    parse_mode: 'Markdown',
+    reply_markup: { force_reply: true, input_field_placeholder: '서울 강남구 테헤란로 123, 101동 1502호' },
+  });
+}
+
+// Mijoz hozir manzilini yozayotgan buyurtma (bo'lmasa — null).
+// Server qayta ishga tushsa xotira tozalanadi — shunda mijoz botning
+// "✍️ ... manzilni yozing" xabariga javob (reply) qilib yozgani orqali topiladi.
+async function fixTarget(ctx, user) {
+  const key = String(ctx.from.id);
+  const pending = pendingFix.get(key);
+  let order = null;
+
+  if (pending && Date.now() - pending.at < FIX_TTL) {
+    order = await OrderModel.byId(pending.orderId);
+  } else {
+    const replied = ctx.message.reply_to_message;
+    const no = replied?.from?.id === ctx.me.id && replied.text?.startsWith('✍️') && ORDER_NO.exec(replied.text)?.[0];
+    if (no) order = await OrderModel.byNumber(no);
+  }
+
+  if (order && order.userId === user.id && canFixAddress(order)) return order;
+  pendingFix.delete(key);
+  return null;
+}
+
+// Manzil to'liqmi: kamida bir necha belgi va uy raqami (Koreya manzilida doim bor)
+export function addressLooksOk(street) {
+  const s = String(street || '').trim();
+  return s.length >= 6 && /\d/.test(s);
+}
+
+async function saveFixedAddress(ctx, user, order, text) {
+  const L = t(user.language);
+  const street = text.trim();
+  if (!addressLooksOk(street)) {
+    return ctx.reply(L.fixBad, { parse_mode: 'Markdown', reply_markup: { force_reply: true } });
+  }
+
+  pendingFix.delete(String(ctx.from.id));
+  const updated = await OrderModel.fixAddress(order.id, { street: street.slice(0, 300), detail: null, zipCode: null });
+  await notifyAddressFixed(updated, order);
+}
+
 async function sendMyOrders(ctx, user) {
   const L = t(user.language);
   const orders = await OrderModel.byUser(user.id);
@@ -349,6 +548,77 @@ export async function notifyReceipt(order) {
   await safeSend(user.telegramId, t(user.language).receiptReceived);
 }
 
+// Adminlarga: chek rasmi + buyurtma qisqacha + "✅ Tasdiqlash" tugmasi
+export async function notifyAdminsReceipt(order) {
+  const ids = await adminChatIds();
+  if (!ids.size) return;
+
+  const caption = receiptCaption(order);
+  const keyboard = new InlineKeyboard().text('✅ Tasdiqlash', `rcpt:ok:${order.id}`);
+
+  for (const id of ids) {
+    const sent = await safeSendPhoto(id, order.receiptUrl, caption, { reply_markup: keyboard });
+    // Rasm ketmasa ham xabar va tugma yetib borsin
+    if (!sent) await safeSend(id, `${caption}\n\n🖼 Chek rasmi admin panelda`, { reply_markup: keyboard });
+  }
+}
+
+function receiptCaption(order, footer = "To'lov hisobingizga tushganini tekshirib, tasdiqlang 👇") {
+  const all = order.items || [];
+  const items = all
+    .slice(0, 5)
+    .map((i) => `• ${md(i.name)}${i.variant ? ` (${md(i.variant)})` : ''} × ${i.qty}`)
+    .join('\n');
+  const more = all.length > 5 ? `\n...va yana ${all.length - 5} ta` : '';
+
+  return (
+    `🧾 *Chek yuborildi!*\n` +
+    `Buyurtma: *${order.orderNumber}*\n\n` +
+    `${items}${more}\n\n` +
+    `💰 Summa: *${money(order.total)}*\n` +
+    `👤 ${md(order.customerName)} · ${md(order.phone)}\n` +
+    `📍 ${addressLine(order)}\n\n` +
+    footer
+  );
+}
+
+// "Ma'lumot xato kiritildi" — mijozga manzilni qayta kiritish so'rovi.
+// Xabar yetib borsa true (saytdan buyurtma bergan mijoz Telegram'da yo'q — false).
+export async function notifyFixRequest(order) {
+  const user = order.user;
+  if (!user || isWebUser(user)) return false;
+  const L = t(user.language);
+
+  const keyboard = new InlineKeyboard().text(L.fixInBot, `fix:${order.id}`);
+  const url = await shopUrl();
+  if (isHttps(url)) keyboard.row().webApp(L.fixInApp, `${url}${url.includes('?') ? '&' : '?'}fix=${order.id}`);
+
+  return safeSend(user.telegramId, L.fixRequest(order, addressLine(order)), { reply_markup: keyboard });
+}
+
+// Mijoz manzilni to'g'riladi (botda yoki ilovada): mijozga tasdiq, adminlarga signal
+export async function notifyAddressFixed(order, before) {
+  const user = order.user;
+  if (user && !isWebUser(user)) {
+    await safeSend(user.telegramId, t(user.language).fixSaved(order.orderNumber, addressLine(order)));
+  }
+
+  const ids = await adminChatIds();
+  if (!ids.size) return;
+  const keyboard = await adminPanelKeyboard();
+  const text =
+    `✏️ *Mijoz manzilni to'g'riladi*\n` +
+    `🧾 ${order.orderNumber}\n` +
+    `👤 ${md(order.customerName)} · ${md(order.phone)}\n\n` +
+    `❌ Eski: ${addressLine(before)}\n` +
+    `✅ Yangi: *${addressLine(order)}*`;
+
+  for (const id of ids) {
+    const sent = await safeSend(id, text, { reply_markup: keyboard });
+    if (!sent && keyboard) await safeSend(id, text);
+  }
+}
+
 export async function notifyStatus(order) {
   const user = order.user;
   if (!user || isWebUser(user)) return; // saytdan kirgan mijoz Telegram'da yo'q
@@ -358,10 +628,15 @@ export async function notifyStatus(order) {
   await safeSend(user.telegramId, fn(order));
 }
 
+// Xabar boradigan adminlar: .env dagi ADMIN_IDS + botda /admin bo'lganlar
+async function adminChatIds() {
+  const fromDb = await UserModel.admins();
+  return new Set([...config.adminIds, ...fromDb.map((u) => u.telegramId)]);
+}
+
 // Adminlarga yangi buyurtma haqida qisqa signal
 export async function notifyAdmins(order) {
-  const fromDb = await UserModel.admins();
-  const ids = new Set([...config.adminIds, ...fromDb.map((u) => u.telegramId)]);
+  const ids = await adminChatIds();
   if (!ids.size) return;
 
   const keyboard = await adminPanelKeyboard();
@@ -382,7 +657,7 @@ export async function notifyAdmins(order) {
     `🚚 Yetkazish: *bepul*\n` +
     `💰 Summa: *${money(order.total)}*\n\n` +
     `👤 ${md(order.customerName)} · ${order.phone}\n` +
-    `📍 ${order.zipCode ? `(${order.zipCode}) ` : ''}${md(order.street)}${order.detail ? ', ' + md(order.detail) : ''}` +
+    `📍 ${addressLine(order)}` +
     (order.comment ? `\n💬 ${md(order.comment)}` : '') +
     `\n\n💳 To'lov: kartaga o'tkazma — mijoz chek yuborishi kutilmoqda`;
 
@@ -403,6 +678,10 @@ function orderPhotos(order) {
 // Markdown belgilarini zararsizlantirish (mijoz yozgan matn xabarni buzmasin)
 function md(s) {
   return String(s ?? '').replace(/[_*`\[]/g, ' ');
+}
+
+function addressLine(order) {
+  return `${order.zipCode ? `(${md(order.zipCode)}) ` : ''}${md(order.street)}${order.detail ? ', ' + md(order.detail) : ''}`;
 }
 
 // /id — Telegram ID ni ko'rsatadi (ADMIN_IDS ga yozish uchun). Guruhda guruh ID si ham chiqadi.

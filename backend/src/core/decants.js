@@ -9,6 +9,10 @@ import prisma from '../database/connection.js';
 
 export const DECANT_SLUG = 'quyma';
 
+// Gramli atirlar kamida shuncha (har xil hid bo'lishi mumkin) olinadi
+// (miniapp/src/constants.js dagi DECANT_MIN bilan bir xil)
+export const DECANT_MIN = 3;
+
 const img = (name) => `/uploads/quyma/${name}.jpg`;
 
 // 10 ml — asosiy narx, 20 ml — ustiga qo'shiladigan farq

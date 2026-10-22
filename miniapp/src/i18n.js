@@ -23,6 +23,8 @@ export const dict = {
     outOfStock: 'Tugagan',
     addToCart: "Savatga qo'shish",
     addedToCart: "Savatga qo'shildi ✦",
+    decantMin: 'Gramli atirlardan kamida 3 ta xarid qilishingiz kerak',
+    decantMore: (n) => `Yana ${n} ta gramli atir qo'shing`,
     variantsCount: 'xil rang/variant',
     chooseSize: "O'lcham (mm)",
     chooseOption: 'Variant',
@@ -139,6 +141,16 @@ export const dict = {
     tracking: 'Kuzatuv · 운송장',
     trackBtn: 'Kuzatish',
     reorder: 'Yana olish',
+    fixBanner: "Manzil xato kiritilgan — qayta kiriting",
+    fixBtn: 'Kiritish',
+
+    // Manzilni qayta kiritish
+    fixTitle: 'Manzilni to‘g‘rilash',
+    fixIntro: (no) => `Buyurtma ${no} manzili xato yoki to‘liq emas. To‘g‘ri manzilni kiriting. Avvalgi manzil: `,
+    fixStreetBad: "Shahar, tuman, ko'cha va uy raqamini to'liq yozing",
+    fixSave: 'Manzilni saqlash',
+    fixSaved: 'Manzil yangilandi',
+    fixClosed: "Bu buyurtma manzilini endi o'zgartirib bo'lmaydi",
 
     // Profil
     profile: 'Profil',
@@ -185,6 +197,8 @@ export const dict = {
     outOfStock: 'Нет в наличии',
     addToCart: 'В корзину',
     addedToCart: 'Добавлено в корзину ✦',
+    decantMin: 'Разливных духов нужно купить минимум 3 шт.',
+    decantMore: (n) => `Добавьте ещё ${n} шт. разливных духов`,
     variantsCount: 'цвета/варианта',
     chooseSize: 'Размер (мм)',
     chooseOption: 'Вариант',
@@ -294,6 +308,15 @@ export const dict = {
     tracking: 'Трек · 운송장',
     trackBtn: 'Отследить',
     reorder: 'Повторить',
+    fixBanner: 'Адрес указан неверно — введите заново',
+    fixBtn: 'Ввести',
+
+    fixTitle: 'Исправить адрес',
+    fixIntro: (no) => `Адрес заказа ${no} неверный или неполный. Введите правильный адрес. Прежний адрес: `,
+    fixStreetBad: 'Укажите город, район, улицу и номер дома',
+    fixSave: 'Сохранить адрес',
+    fixSaved: 'Адрес обновлён',
+    fixClosed: 'Адрес этого заказа уже нельзя изменить',
 
     profile: 'Профиль',
     welcomeMember: 'Добро пожаловать!',

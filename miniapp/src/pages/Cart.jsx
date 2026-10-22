@@ -78,6 +78,7 @@ export default function Cart({
   goCatalog,
   onCheckout,
   orderInBrowser,
+  decantShort,
 }) {
   if (!items.length) {
     return (
@@ -163,7 +164,13 @@ export default function Cart({
       {orderInBrowser && <div className="note">🌐 {t.orderInBrowserHint}</div>}
 
       <div className="sticky-cta">
-        <button className="btn" onClick={onCheckout}>
+        {decantShort > 0 && (
+          <div className="cta-warn">
+            <b>🧪 {t.decantMin}</b>
+            {t.decantMore(decantShort)}
+          </div>
+        )}
+        <button className="btn" onClick={onCheckout} disabled={decantShort > 0}>
           {orderInBrowser ? t.orderInBrowser : t.checkout} · {money(total)}
         </button>
       </div>

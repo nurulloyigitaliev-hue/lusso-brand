@@ -7,7 +7,7 @@ import ProductModel from '../models/Product.js';
 import OrderModel from '../models/Order.js';
 import UserModel from '../models/User.js';
 import SettingModel from '../models/Setting.js';
-import { notifyStatus, runBroadcast } from './botController.js';
+import { notifyStatus, notifyFixRequest, runBroadcast } from './botController.js';
 import { botLink } from '../core/bot.js';
 
 // ---------------- KIRISH ----------------
@@ -127,6 +127,20 @@ export async function updateOrder(req, res) {
   if (status && status !== current.status) notifyStatus(order).catch(() => {});
 
   res.json(order);
+}
+
+// "Ma'lumot xato kiritildi" — mijozga manzilni qayta kiritish so'rovi boradi.
+// sent: false — mijozga bot orqali yetib bormadi (saytdan buyurtma bergan yoki botni bloklagan)
+export async function requestFix(req, res) {
+  const current = await OrderModel.byId(req.params.id);
+  if (!current) return res.status(404).json({ error: 'Topilmadi' });
+  if (['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(current.status)) {
+    return res.status(400).json({ error: "Buyurtma jo'natilgan yoki bekor qilingan — manzilni o'zgartirib bo'lmaydi" });
+  }
+
+  const order = await OrderModel.requestFix(current.id);
+  const sent = await notifyFixRequest(order);
+  res.json({ order, sent });
 }
 
 // ---------------- SAVDONI TOZALASH ----------------

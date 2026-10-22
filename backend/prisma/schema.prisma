@@ -141,6 +141,7 @@ model Order {
   receiptUrl     String? // chek skrinshoti
   trackingNumber String? // 운송장번호
   adminNote      String?
+  addressFix     Boolean @default(false) // admin "Ma'lumot xato kiritildi" bosgan — mijozdan to'g'ri manzil kutilmoqda
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

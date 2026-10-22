@@ -5,6 +5,7 @@ import { haptic, openLink } from '../telegram';
 import { onImgError, PLACEHOLDER } from '../components/ProductCard';
 import { frameStyle, thumb } from '../framing';
 import Icon from '../components/Icon';
+import { canFixAddress } from './AddressFix';
 
 const FLOW = ['PENDING_PAYMENT', 'CONFIRMED', 'SHIPPED', 'DELIVERED'];
 
@@ -16,7 +17,7 @@ function stepOf(status) {
 // 운송장번호 → Naver'dagi 택배 kuzatuv (qaysi kompaniya bo'lsa ham topadi)
 const trackUrl = (n) => `https://m.search.naver.com/search.naver?query=${encodeURIComponent(n + ' 택배조회')}`;
 
-export default function Orders({ t, lang, onBack, onReorder }) {
+export default function Orders({ t, lang, onBack, onReorder, onFix }) {
   const [orders, setOrders] = useState(null);
   const [copied, setCopied] = useState(null);
 
@@ -100,6 +101,20 @@ export default function Orders({ t, lang, onBack, onReorder }) {
                     </div>
                   ))}
                 </div>
+
+                {canFixAddress(o) && (
+                  <div className="order-fix">
+                    <span>⚠️ {t.fixBanner}</span>
+                    <button
+                      onClick={() => {
+                        haptic('light');
+                        onFix(o.id);
+                      }}
+                    >
+                      {t.fixBtn}
+                    </button>
+                  </div>
+                )}
 
                 {o.trackingNumber && (
                   <div className="track">

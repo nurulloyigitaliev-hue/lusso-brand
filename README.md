@@ -196,6 +196,14 @@ Narx uchun esa `db:prices` ishlating — u hech narsani o'chirmaydi.
 6. Admin panelda buyurtmani ochasiz → chekni ko'rasiz → **Tasdiqlangan** qilasiz
 7. 운송장번호 (tracking) kiritasiz → mijozga avtomatik xabar boradi
 
+**Chek:** mijoz chekni ilovada yuklasa ham, botga rasm qilib tashlasa ham, sizga botda
+"🧾 Chek yuborildi" deb chek rasmi keladi, tagida **✅ Tasdiqlash** tugmasi — bossangiz
+buyurtma tasdiqlanadi va mijozga xabar ketadi (panelga kirish shart emas).
+
+**Manzil xato bo'lsa:** buyurtmani oching → **⚠️ Ma'lumot xato kiritildi**. Mijozga
+"Manzilni qayta kiriting" xabari boradi: manzilni botga yozib yuboradi yoki
+ilovada formaga kiritadi. Yangi manzil buyurtmaga yoziladi va sizga botda xabar keladi.
+
 ---
 
 ## 🖼 Mahsulot va rasm qo'shish

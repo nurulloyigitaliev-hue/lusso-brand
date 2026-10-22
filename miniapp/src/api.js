@@ -56,6 +56,10 @@ export const api = {
     return request(`/orders/${orderId}/receipt`, { method: 'POST', body: fd });
   },
 
+  // Admin "Ma'lumot xato kiritildi" bosgan buyurtmaga to'g'ri manzil
+  fixAddress: (orderId, data) =>
+    request(`/orders/${orderId}/address`, { method: 'POST', body: JSON.stringify(data) }),
+
   addresses: () => request('/addresses'),
   setLanguage: (language) => request('/language', { method: 'POST', body: JSON.stringify({ language }) }),
 };

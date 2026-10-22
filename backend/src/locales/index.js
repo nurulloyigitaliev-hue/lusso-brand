@@ -1,17 +1,21 @@
 // Bot matnlari: o'zbekcha va ruscha
+export const INSTAGRAM_URL = 'https://www.instagram.com/lusso_brand.kr/';
+
 export const texts = {
   uz: {
     chooseLanguage: 'Tilni tanlang / Выберите язык',
+    // Xush kelibsiz rasmining izohi (HTML) — name oldindan zararsizlantirilgan bo'ladi
     welcome: (name) =>
-      `Assalomu alaykum, ${name}! 👋\n\n*LUSSO BRAND KR* — Koreyadagi erkaklar uchun original oyoq kiyim 👟, ko'zoynak 🕶 va atirlar 🧴 do'koni.\n\nDavom etish uchun telefon raqamingizni yuboring.`,
+      `Assalom alekum${name ? `, ${name}` : ''}🤝\n\n🙋‍♂️<b>Lusso_brand.kr</b>\nKoreyada sifatli ishonchli\nKrasofkalar👟\nAtirlar🍋‍🟩\nOchkilar😎\n\n🚚Pochtasi Bepul va Tez💨\n\n🏪Do’kondagi mahsulotlarni koring👇`,
+    askPhone: "📱 Buyurtmalar bo'yicha bog'lanishimiz uchun telefon raqamingizni yuboring — pastdagi tugmani bosing 👇",
     sendPhone: '📱 Telefon raqamni yuborish',
     phoneSaved: 'Rahmat! ✅\n\nEndi do\'konni ochib, xaridni boshlashingiz mumkin 👇',
     menuShop: '🛍 Do\'konni ochish',
     menuOrders: '📦 Buyurtmalarim',
     menuContact: '📞 Aloqa',
     menuInstall: "📲 Ilovani o'rnatish",
+    menuInstagram: '📸 Instagram',
     menuLang: '🌐 Til / Язык',
-    mainMenu: 'Asosiy menyu 👇',
     installIphone:
       "📱 *iPhone'da o'rnatish*\n\n1️⃣ Havolani *ustiga bosib turing*\n2️⃣ «Открыть в Safari» ni tanlang\n3️⃣ Pastdagi «Ulashish» tugmasi → «На экран «Домой»» → «Добавить»",
     installAndroid:
@@ -21,11 +25,26 @@ export const texts = {
     noOrders: 'Sizda hali buyurtma yo\'q.\n\nDo\'konni ochib, birinchi buyurtmangizni bering 🛍',
     yourOrders: '📦 *Sizning buyurtmalaringiz:*',
     contact: (phone) =>
-      `📞 *Biz bilan bog'laning*\n\nMahsulot, o'lcham, to'lov yoki yetkazib berish bo'yicha savollaringiz bo'lsa — bizga yozing, mutaxassisimiz tez orada javob beradi.\n\n📱 WhatsApp / Telegram: *${phone}*\n🕙 Har kuni 10:00 — 22:00 (Koreya vaqti)`,
+      `📞 *Biz bilan bog'laning*\n\nMahsulot, o'lcham, to'lov yoki yetkazib berish bo'yicha savollaringiz bo'lsa — bizga yozing, mutaxassisimiz tez orada javob beradi.\n\n📱 WhatsApp / Telegram: *${phone}*\n📸 Instagram: [lusso_brand.kr](${INSTAGRAM_URL})\n🕙 Har kuni 10:00 — 22:00 (Koreya vaqti)`,
     openShopHint: 'Do\'konni ochish uchun pastdagi tugmani bosing 👇',
     orderCreated: (o) =>
       `✅ *Buyurtmangiz qabul qilindi!*\n\n🧾 Buyurtma: *${o.orderNumber}*\n💰 Jami: *${money(o.total)}*\n\n💳 To'lov uchun:\n\`${o.bankAccount}\`\n${o.bankName} — ${o.bankHolder}\n\n⚠️ To'lovni amalga oshirib, chek rasmini yuboring. Tasdiqlangach, buyurtmangiz jo'natiladi 📦`,
     receiptReceived: 'Chek qabul qilindi ✅\nAdmin tekshirgach sizga xabar beramiz.',
+    receiptFor: (no) => `🧾 *Chek qabul qilindi* ✅\n\nBuyurtma: *${no}*\nAdmin tekshirgach sizga xabar beramiz.`,
+    receiptNoOrder:
+      "Rasm uchun rahmat! 🙏\n\nTo'lov kutilayotgan buyurtmangiz topilmadi. Savolingiz bo'lsa — WhatsApp yoki Telegram orqali yozing: *010-5790-4777*",
+    receiptFailed: "⚠️ Chekni saqlab bo'lmadi. Iltimos, rasmni qaytadan yuboring.",
+    fixRequest: (o, addr) =>
+      `⚠️ *Buyurtmadagi ma'lumot xato kiritilgan*\n\n🧾 Buyurtma: *${o.orderNumber}*\n📍 Siz kiritgan manzil: ${addr}\n\nBu manzil xato yoki to'liq emas — buyurtmani jo'nata olmaymiz. Iltimos, to'g'ri manzilni qayta kiriting 👇\n\n✍️ *Shu yerda* — manzilni botga bitta xabar qilib yozasiz\n📲 *Ilovada* — do'kon ochiladi, manzilni formaga kiritasiz`,
+    fixInBot: '✍️ Manzilni qayta kiriting',
+    fixInApp: '📲 Ilovada qayta kiritish',
+    fixAsk: (no) =>
+      `✍️ Buyurtma *${no}* uchun to'liq manzilni bitta xabarda yozing:\n\n• 주소 — shahar, tuman, ko'cha va uy raqami\n• 상세주소 — bino / xonadon\n\nMasalan: \`서울 강남구 테헤란로 123, 101동 1502호\``,
+    fixBad:
+      "⚠️ Manzil to'liq emas. Shahar, tuman, ko'cha va uy raqamini yozing.\n\nMasalan: `서울 강남구 테헤란로 123, 101동 1502호`",
+    fixSaved: (no, addr) =>
+      `✅ *Manzil yangilandi!*\n\n🧾 Buyurtma: *${no}*\n📍 ${addr}\n\nRahmat! Buyurtmangiz shu manzilga jo'natiladi 📦`,
+    fixClosed: "Bu buyurtma manzilini endi o'zgartirib bo'lmaydi. Savollar bo'lsa: *010-5790-4777* (WhatsApp / Telegram).",
     statusCONFIRMED: (o) =>
       `✅ *To'lovingiz tasdiqlandi!*\n\n🧾 Buyurtma: ${o.orderNumber}\nBuyurtmangiz tayyorlanmoqda 📦`,
     statusSHIPPED: (o) =>
@@ -42,15 +61,16 @@ export const texts = {
   ru: {
     chooseLanguage: 'Tilni tanlang / Выберите язык',
     welcome: (name) =>
-      `Здравствуйте, ${name}! 👋\n\n*LUSSO BRAND KR* — магазин мужской обуви 👟, очков 🕶 и парфюма 🧴 в Корее.\n\nОтправьте номер телефона, чтобы продолжить.`,
+      `Здравствуйте${name ? `, ${name}` : ''}🤝\n\n🙋‍♂️<b>Lusso_brand.kr</b>\nКачественные и надёжные товары в Корее\nКроссовки👟\nПарфюм🍋‍🟩\nОчки😎\n\n🚚Доставка бесплатная и быстрая💨\n\n🏪Смотрите товары в магазине👇`,
+    askPhone: '📱 Чтобы мы могли связаться с вами по заказу, отправьте номер телефона — нажмите кнопку ниже 👇',
     sendPhone: '📱 Отправить номер',
     phoneSaved: 'Спасибо! ✅\n\nТеперь можно открыть магазин 👇',
     menuShop: '🛍 Открыть магазин',
     menuOrders: '📦 Мои заказы',
     menuContact: '📞 Связь',
     menuInstall: '📲 Как установить',
+    menuInstagram: '📸 Instagram',
     menuLang: '🌐 Til / Язык',
-    mainMenu: 'Главное меню 👇',
     installIphone:
       '📱 *Установка на iPhone*\n\n1️⃣ *Нажмите и удерживайте* ссылку\n2️⃣ Выберите «Открыть в Safari»\n3️⃣ Внизу «Поделиться» → «На экран «Домой»» → «Добавить»',
     installAndroid:
@@ -60,11 +80,26 @@ export const texts = {
     noOrders: 'У вас пока нет заказов.\n\nОткройте магазин и сделайте первый заказ 🛍',
     yourOrders: '📦 *Ваши заказы:*',
     contact: (phone) =>
-      `📞 *Связаться с нами*\n\nЕсть вопросы о товаре, размере, оплате или доставке? Напишите нам — специалист ответит в ближайшее время.\n\n📱 WhatsApp / Telegram: *${phone}*\n🕙 Ежедневно 10:00 — 22:00 (по Корее)`,
+      `📞 *Связаться с нами*\n\nЕсть вопросы о товаре, размере, оплате или доставке? Напишите нам — специалист ответит в ближайшее время.\n\n📱 WhatsApp / Telegram: *${phone}*\n📸 Instagram: [lusso_brand.kr](${INSTAGRAM_URL})\n🕙 Ежедневно 10:00 — 22:00 (по Корее)`,
     openShopHint: 'Нажмите кнопку ниже, чтобы открыть магазин 👇',
     orderCreated: (o) =>
       `✅ *Заказ принят!*\n\n🧾 Заказ: *${o.orderNumber}*\n💰 Итого: *${money(o.total)}*\n\n💳 Для оплаты:\n\`${o.bankAccount}\`\n${o.bankName} — ${o.bankHolder}\n\n⚠️ Оплатите и отправьте скриншот чека. После подтверждения заказ будет отправлен 📦`,
     receiptReceived: 'Чек получен ✅\nМы сообщим после проверки.',
+    receiptFor: (no) => `🧾 *Чек получен* ✅\n\nЗаказ: *${no}*\nМы сообщим после проверки.`,
+    receiptNoOrder:
+      'Спасибо за фото! 🙏\n\nЗаказ, ожидающий оплаты, не найден. Есть вопросы — напишите в WhatsApp или Telegram: *010-5790-4777*',
+    receiptFailed: '⚠️ Не удалось сохранить чек. Пожалуйста, отправьте фото ещё раз.',
+    fixRequest: (o, addr) =>
+      `⚠️ *В заказе указаны неверные данные*\n\n🧾 Заказ: *${o.orderNumber}*\n📍 Ваш адрес: ${addr}\n\nАдрес неверный или неполный — мы не можем отправить заказ. Пожалуйста, введите правильный адрес 👇\n\n✍️ *Здесь* — напишите адрес боту одним сообщением\n📲 *В приложении* — откроется магазин, введёте адрес в форму`,
+    fixInBot: '✍️ Ввести адрес заново',
+    fixInApp: '📲 Ввести в приложении',
+    fixAsk: (no) =>
+      `✍️ Напишите полный адрес для заказа *${no}* одним сообщением:\n\n• 주소 — город, район, улица и номер дома\n• 상세주소 — корпус / квартира\n\nНапример: \`서울 강남구 테헤란로 123, 101동 1502호\``,
+    fixBad:
+      '⚠️ Адрес неполный. Укажите город, район, улицу и номер дома.\n\nНапример: `서울 강남구 테헤란로 123, 101동 1502호`',
+    fixSaved: (no, addr) =>
+      `✅ *Адрес обновлён!*\n\n🧾 Заказ: *${no}*\n📍 ${addr}\n\nСпасибо! Заказ будет отправлен по этому адресу 📦`,
+    fixClosed: 'Адрес этого заказа уже нельзя изменить. По вопросам: *010-5790-4777* (WhatsApp / Telegram).',
     statusCONFIRMED: (o) => `✅ *Оплата подтверждена!*\n\n🧾 Заказ: ${o.orderNumber}\nЗаказ готовится 📦`,
     statusSHIPPED: (o) =>
       `🚚 *Заказ отправлен!*\n\n🧾 Заказ: ${o.orderNumber}${
