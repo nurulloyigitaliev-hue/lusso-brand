@@ -7,6 +7,7 @@ import ProductModel from '../models/Product.js';
 import OrderModel from '../models/Order.js';
 import UserModel from '../models/User.js';
 import SettingModel from '../models/Setting.js';
+import VisitModel from '../models/Visit.js';
 import { notifyStatus, notifyFixRequest, runBroadcast } from './botController.js';
 import { botLink } from '../core/bot.js';
 
@@ -89,6 +90,11 @@ export function health(req, res) {
 }
 
 // ---------------- DASHBOARD ----------------
+// Mini App'ni har kuni nechta mijoz ochgani (oxirgi 7 kun)
+export async function visits(req, res) {
+  res.json({ days: await VisitModel.daily(7) });
+}
+
 export async function stats(req, res) {
   const [data, lowStock] = await Promise.all([OrderModel.stats(), ProductModel.lowStock(3)]);
   res.json({
@@ -268,7 +274,7 @@ export async function broadcast(req, res) {
   const { text, imageUrl, buttonText, buttonUrl } = req.body;
   if (!text) return res.status(400).json({ error: 'Matn kiritilmagan' });
 
-  const result = await runBroadcast({ text, imageUrl, buttonText, buttonUrl });
+  const { messages, ...result } = await runBroadcast({ text, imageUrl, buttonText, buttonUrl });
 
   await prisma.broadcast.create({
     data: {
@@ -278,6 +284,7 @@ export async function broadcast(req, res) {
       buttonUrl: buttonUrl || null,
       sentCount: result.sent,
       failCount: result.failed,
+      messages,
     },
   });
 
@@ -285,7 +292,9 @@ export async function broadcast(req, res) {
 }
 
 export async function broadcastHistory(req, res) {
-  res.json(await prisma.broadcast.findMany({ orderBy: { createdAt: 'desc' }, take: 20 }));
+  res.json(
+    await prisma.broadcast.findMany({ orderBy: { createdAt: 'desc' }, take: 20, omit: { messages: true } })
+  );
 }
 
 // ---------------- SOZLAMALAR ----------------

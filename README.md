@@ -6,7 +6,7 @@ Telegram Mini App + Bot + Admin Panel.
 **Bot:** [@lusso_brand_bot](https://t.me/lusso_brand_bot)
 **Admin panel:** botda `/panel` → tugmani bosing (panel botning ichida ochiladi)
 
-**Bot buyruqlari:** `/start` · `/panel` · `/admin PAROL` · `/narxlar` · `/id`
+**Bot buyruqlari:** `/start` · `/panel` · `/admin PAROL` · `/narxlar` · `/id` · `/o'chir` (oxirgi rassilkani hammadan o'chirish, 48 soat ichida)
 
 ---
 

@@ -29,6 +29,7 @@ router.use((req, res, next) => {
 });
 
 router.get('/stats', admin.stats);
+router.get('/visits', admin.visits);
 
 // Buyurtmalar
 router.get('/orders', admin.listOrders);

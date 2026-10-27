@@ -24,15 +24,19 @@ export function botLink() {
   return null;
 }
 
-// Xabar yuborish (xatolik bo'lsa server to'xtamaydi)
+// Xabar yuborish (xatolik bo'lsa server to'xtamaydi). Yetib borsa true.
 export async function safeSend(chatId, text, extra = {}) {
-  if (!bot) return false;
+  return Boolean(await safeSendMessage(chatId, text, extra));
+}
+
+// safeSend bilan bir xil, lekin yuborilgan xabarning o'zini qaytaradi (bo'lmasa null)
+export async function safeSendMessage(chatId, text, extra = {}) {
+  if (!bot) return null;
   try {
-    await bot.api.sendMessage(String(chatId), text, { parse_mode: 'Markdown', ...extra });
-    return true;
+    return await bot.api.sendMessage(String(chatId), text, { parse_mode: 'Markdown', ...extra });
   } catch (err) {
     console.error(`⚠️  ${chatId} ga xabar yuborilmadi: ${err.message}`);
-    return false;
+    return null;
   }
 }
 

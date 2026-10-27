@@ -3,7 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Keyboard, InlineKeyboard, InputFile } from 'grammy';
 import config from '../config/default.js';
-import { safeSend, safeSendPhoto, safeSendWithPhotos } from '../core/bot.js';
+import prisma from '../database/connection.js';
+import { safeSend, safeSendMessage, safeSendPhoto, safeSendWithPhotos } from '../core/bot.js';
 import UserModel, { isWebUser } from '../models/User.js';
 import OrderModel, { canFixAddress } from '../models/Order.js';
 import SettingModel from '../models/Setting.js';
@@ -826,9 +827,10 @@ export async function onPricesCommand(ctx) {
 }
 
 // ---------------- RASSILKA ----------------
+// messages — [[chatId, messageId], ...]: keyin /o'chir bilan qaytarib olish uchun
 export async function runBroadcast({ text, imageUrl, buttonText, buttonUrl }) {
   const users = await UserModel.allTelegramIds();
-  let sent = 0;
+  const messages = [];
   let failed = 0;
 
   const markup =
@@ -838,23 +840,231 @@ export async function runBroadcast({ text, imageUrl, buttonText, buttonUrl }) {
   let photo = imageUrl || null;
 
   for (const u of users) {
-    if (photo) {
-      const msg = await safeSendPhoto(u.telegramId, photo, text, { reply_markup: markup });
-      if (msg) {
-        sent++;
-        const fileId = msg.photo?.[msg.photo.length - 1]?.file_id;
-        if (fileId) photo = fileId;
-      } else {
-        failed++;
-      }
+    const msg = photo
+      ? await safeSendPhoto(u.telegramId, photo, text, { reply_markup: markup })
+      : await safeSendMessage(u.telegramId, text, { reply_markup: markup });
+    if (msg) {
+      messages.push([u.telegramId, msg.message_id]);
+      const fileId = msg.photo?.[msg.photo.length - 1]?.file_id;
+      if (fileId) photo = fileId;
     } else {
-      (await safeSend(u.telegramId, text, { reply_markup: markup })) ? sent++ : failed++;
+      failed++;
     }
     // Telegram limiti: sekundiga ~30 xabar
-    await new Promise((r) => setTimeout(r, 45));
+    await sleep(45);
   }
 
-  return { sent, failed, total: users.length };
+  return { sent: messages.length, failed, total: users.length, messages };
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---------------- RASSILKANI O'CHIRISH (/o'chir) ----------------
+
+// Telegram bot xabarini faqat 48 soat ichida o'chirishga ruxsat beradi
+const DELETE_LIMIT = 48 * 60 * 60 * 1000;
+let deleting = false;
+
+// /o'chir — oxirgi rassilkani ko'rsatadi va o'chirishni tasdiqlashni so'raydi
+export async function onDeleteBroadcastCommand(ctx) {
+  if (!(await isAdminUser(ctx.from.id))) {
+    return ctx.reply('Bu buyruq faqat adminlar uchun.');
+  }
+
+  const last = await prisma.broadcast.findFirst({ orderBy: { id: 'desc' }, omit: { messages: true } });
+  if (!last) return ctx.reply('Hali rassilka yuborilmagan.');
+
+  const when = kstTime(last.createdAt);
+  if (last.deletedAt) {
+    return ctx.reply(`✅ Oxirgi rassilka (${when}) allaqachon o'chirilgan.`);
+  }
+  if (Date.now() - last.createdAt.getTime() > DELETE_LIMIT) {
+    return ctx.reply(
+      `⚠️ Oxirgi rassilka ${when} da yuborilgan.\n\n` +
+        "Telegram 48 soatdan eski xabarlarni o'chirishga ruxsat bermaydi."
+    );
+  }
+
+  const preview = last.text.length > 200 ? last.text.slice(0, 200) + '…' : last.text;
+  return ctx.reply(
+    `🗑 Oxirgi rassilka o'chirilsinmi?\n\n` +
+      `🕒 ${when} · ${last.sentCount} ta mijozga yetgan\n\n` +
+      `${preview}\n\n` +
+      "Xabar barcha mijozlarning chatidan o'chadi.",
+    {
+      reply_markup: new InlineKeyboard()
+        .text("🗑 Ha, o'chirish", `bc:del:${last.id}`)
+        .text('Bekor qilish', 'bc:cancel'),
+    }
+  );
+}
+
+export async function onDeleteBroadcastCancel(ctx) {
+  await ctx.answerCallbackQuery();
+  return ctx.editMessageText("Bekor qilindi — rassilka o'chirilmadi.").catch(() => {});
+}
+
+// "🗑 Ha, o'chirish" — o'chirish fonda ketadi (bot boshqa xabarlarga javob berishda davom etadi)
+export async function onDeleteBroadcastConfirm(ctx) {
+  if (!(await isAdminUser(ctx.from.id))) {
+    return ctx.answerCallbackQuery({ text: 'Bu tugma faqat adminlar uchun', show_alert: true });
+  }
+  if (deleting) {
+    return ctx.answerCallbackQuery({ text: "Rassilka hozir o'chirilyapti, kuting…", show_alert: true });
+  }
+
+  const item = await prisma.broadcast.findUnique({ where: { id: Number(ctx.match[1]) } });
+  if (!item || item.deletedAt) {
+    await ctx.answerCallbackQuery({ text: "Bu rassilka allaqachon o'chirilgan" });
+    return ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch(() => {});
+  }
+
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText("⏳ Rassilka mijozlardan o'chirilmoqda…").catch(() => {});
+
+  // Bot yangilanishlarni navbat bilan oladi — tekshiruv va shu qator orasida
+  // ikkinchi bosish kirib qolmaydi
+  deleting = true;
+  const status = { chatId: ctx.chat.id, messageId: ctx.callbackQuery.message.message_id };
+  deleteBroadcast(ctx.api, ctx.me.id, item, status)
+    .catch((err) => {
+      console.error('deleteBroadcast:', err);
+      return ctx.api.editMessageText(status.chatId, status.messageId, `❌ Xatolik: ${err.message}`);
+    })
+    .catch(() => {})
+    .finally(() => {
+      deleting = false;
+    });
+}
+
+async function deleteBroadcast(api, botId, item, status) {
+  const progress = progressReporter(api, status);
+  const stored = Array.isArray(item.messages) ? item.messages : [];
+  let deleted = 0;
+  let total;
+
+  if (stored.length) {
+    // Yangi rassilkalar: har bir xabarning raqami saqlangan
+    total = stored.length;
+    for (const [i, [chatId, messageId]] of stored.entries()) {
+      if (await tgCall(() => api.deleteMessage(chatId, messageId))) deleted++;
+      await progress(i + 1, total, deleted);
+      await sleep(35);
+    }
+  } else {
+    // Xabar raqamlari saqlanmagan (eski rassilka) — har bir chatdan qidirib topiladi
+    const users = await UserModel.allTelegramIds();
+    total = users.length;
+    for (const [i, u] of users.entries()) {
+      if (await findAndDelete(api, botId, u.telegramId, item)) deleted++;
+      await progress(i + 1, total, deleted);
+      await sleep(35);
+    }
+  }
+
+  // Hech narsa o'chmagan bo'lsa — belgilamaymiz, /o'chir ni qayta urinish mumkin
+  if (deleted) {
+    await prisma.broadcast.update({ where: { id: item.id }, data: { deletedAt: new Date(), messages: [] } });
+  }
+
+  const text = deleted
+    ? `✅ Rassilka o'chirildi: ${deleted} ta chatdan.` +
+      (total > deleted
+        ? `\n\n${total - deleted} ta chatda topilmadi (botni bloklagan yoki xabarni o'zi o'chirgan).`
+        : '')
+    : "⚠️ Rassilka hech bir chatdan topilmadi — o'chirilmadi.";
+  await api.editMessageText(status.chatId, status.messageId, text).catch(() => {});
+}
+
+// Har 15 soniyada holat xabarini yangilab turadi — admin jarayon ketayotganini ko'rsin
+function progressReporter(api, status) {
+  let last = Date.now();
+  return async (done, total, deleted) => {
+    if (Date.now() - last < 15000) return;
+    last = Date.now();
+    await api
+      .editMessageText(
+        status.chatId,
+        status.messageId,
+        `⏳ Rassilka o'chirilmoqda… ${done}/${total}\n🗑 O'chirildi: ${deleted}`
+      )
+      .catch(() => {});
+  };
+}
+
+/**
+ * Eski rassilkani bitta mijoz chatidan topib o'chiradi.
+ * Bot chat tarixini o'qiy olmaydi, shuning uchun:
+ *   1. jim (ovozsiz) belgi yuborib, chatdagi oxirgi xabar raqamini bilib oladi va darhol o'chiradi;
+ *   2. oxirgi xabarlarni birma-bir shu chatning o'ziga forward qilib, mazmunini tekshiradi
+ *      (nusxa darhol o'chiriladi);
+ *   3. botning shu rassilka vaqtida yuborgan, matni bir xil xabari topilsa — o'chiradi.
+ */
+const SCAN_DEPTH = 15;
+
+async function findAndDelete(api, botId, chatId, item) {
+  const quiet = { disable_notification: true };
+  const probe = await tgCall(() => api.sendMessage(chatId, '⏳', quiet));
+  if (!probe) return false; // botni bloklagan
+  await tgCall(() => api.deleteMessage(chatId, probe.message_id));
+
+  // Rassilka yuborilib bo'lingach yozuv yaratiladi — xabarlar shu vaqtgacha ketgan
+  const sentAt = Math.floor(item.createdAt.getTime() / 1000);
+  const from = sentAt - 3 * 60 * 60;
+  const to = sentAt + 5 * 60;
+  const want = plainText(item.text);
+
+  for (let id = probe.message_id - 1; id > 0 && id >= probe.message_id - SCAN_DEPTH; id--) {
+    const copy = await tgCall(() => api.forwardMessage(chatId, chatId, id, quiet));
+    if (!copy) continue; // o'chirilgan yoki xizmat xabari
+    await tgCall(() => api.deleteMessage(chatId, copy.message_id));
+
+    const origin = copy.forward_origin;
+    if (origin?.date < from) return false; // rassilkadan oldingi xabarlarga yetdik
+    if (
+      origin?.type === 'user' &&
+      origin.sender_user?.id === botId &&
+      origin.date <= to &&
+      plainText(copy.caption ?? copy.text) === want
+    ) {
+      return Boolean(await tgCall(() => api.deleteMessage(chatId, id)));
+    }
+  }
+  return false;
+}
+
+// Matnni Telegram ko'rsatgan ko'rinishga keltiradi: Markdown belgilari va bo'shliqlarsiz
+function plainText(s) {
+  return String(s ?? '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`[\]\\\s]/g, '')
+    .slice(0, 40);
+}
+
+// Telegram so'rovi: "juda tez" (429) bo'lsa kutib qayta urinadi, boshqa xatoda null
+async function tgCall(fn) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const wait = err?.parameters?.retry_after;
+      if (err?.error_code !== 429 || !wait) return null;
+      await sleep(wait * 1000 + 200);
+    }
+  }
+  return null;
+}
+
+// Sana Koreya vaqtida: "27.10.2026, 19:06"
+function kstTime(date) {
+  return date.toLocaleString('ru-RU', {
+    timeZone: 'Asia/Seoul',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export { STATUS_LABEL };

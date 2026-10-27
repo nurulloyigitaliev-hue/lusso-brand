@@ -169,7 +169,18 @@ model Broadcast {
   buttonUrl  String?
   sentCount  Int      @default(0)
   failCount  Int      @default(0)
+  messages   Json     @default("[]") // [[chatId, messageId], ...] — botdagi /o'chir shu ro'yxat bo'yicha o'chiradi
+  deletedAt  DateTime? // /o'chir bilan mijozlardan o'chirilgan vaqt
   createdAt  DateTime @default(now())
+}
+
+// ---------------- MINI APP TASHRIFLARI ----------------
+// Mijoz ilovani ochganda yoziladi: bir mijoz bir kunda bir marta sanaladi
+model Visit {
+  day    String // "2026-10-27" — Koreya vaqti bo'yicha
+  userId Int
+
+  @@id([day, userId])
 }
 
 // ---------------- DO'KON SOZLAMALARI ----------------

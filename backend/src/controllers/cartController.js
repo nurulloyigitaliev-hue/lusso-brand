@@ -5,6 +5,7 @@ import UserModel from '../models/User.js';
 import ProductModel from '../models/Product.js';
 import OrderModel, { canFixAddress } from '../models/Order.js';
 import SettingModel from '../models/Setting.js';
+import VisitModel from '../models/Visit.js';
 import { cached, clearCache } from '../core/cache.js';
 import { DECANT_SLUG, DECANT_MIN } from '../core/decants.js';
 import {
@@ -19,6 +20,8 @@ import {
 // Mini App ochilganda mijozni ro'yxatdan o'tkazish
 export async function auth(req, res) {
   const user = await UserModel.findOrCreate(req.tgUser);
+  // Admin paneldagi "Tashriflar" uchun: bugun ilovani ochganlar
+  VisitModel.track(user.id).catch((err) => console.error('Tashrif yozilmadi:', err.message));
   if (req.body?.language && req.body.language !== user.language) {
     await UserModel.setLanguage(user.telegramId, req.body.language);
     user.language = req.body.language;

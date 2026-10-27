@@ -88,6 +88,7 @@ export const api = {
     request('/login', { method: 'POST', body: JSON.stringify({ initData }) }),
 
   stats: () => request('/stats'),
+  visits: () => request('/visits'),
 
   orders: (status) => request('/orders' + (status && status !== 'all' ? `?status=${status}` : '')),
   updateOrder: (id, data) => request(`/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

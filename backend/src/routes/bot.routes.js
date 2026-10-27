@@ -12,6 +12,9 @@ import {
   onPhoto,
   onReceiptConfirm,
   onFixStart,
+  onDeleteBroadcastCommand,
+  onDeleteBroadcastConfirm,
+  onDeleteBroadcastCancel,
 } from '../controllers/botController.js';
 
 export function registerBotHandlers(bot) {
@@ -24,6 +27,13 @@ export function registerBotHandlers(bot) {
   bot.command('panel', onPanelCommand);
 
   bot.command('narxlar', onPricesCommand);
+
+  // /o'chir — oxirgi rassilkani mijozlardan o'chirish. Apostrof bilan yozilgan
+  // buyruqni Telegram "/o" deb kesadi, shuning uchun matn bo'yicha tutiladi
+  // (/o'chir, /o‘chir, /o’chir, /ochir)
+  bot.hears(/^\/o['‘’ʻʼ`]?chir(@\w+)?\s*$/i, onDeleteBroadcastCommand);
+  bot.callbackQuery(/^bc:del:(\d+)$/, onDeleteBroadcastConfirm);
+  bot.callbackQuery('bc:cancel', onDeleteBroadcastCancel);
 
   bot.command('id', onIdCommand);
   // Oddiy "id" deb yozilsa ham (slashsiz)

@@ -92,6 +92,10 @@ export default function BroadcastPage({ toast }) {
           <button className="btn full" onClick={send} disabled={busy}>
             {busy ? 'Yuborilmoqda... (biroz vaqt oladi)' : '📢 Hammaga yuborish'}
           </button>
+          <div className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>
+            Xato yuborildimi? Botga <b>/o'chir</b> deb yozing — oxirgi rassilka barcha mijozlardan
+            o'chadi (48 soat ichida).
+          </div>
         </div>
 
         <div className="card">
@@ -108,6 +112,7 @@ export default function BroadcastPage({ toast }) {
                 <div className="muted" style={{ fontSize: 12 }}>
                   ✅ {h.sentCount} · ❌ {h.failCount} ·{' '}
                   {new Date(h.createdAt).toLocaleString('ru-RU')}
+                  {h.deletedAt && " · 🗑 o'chirilgan"}
                 </div>
               </div>
             ))
