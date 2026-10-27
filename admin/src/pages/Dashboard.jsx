@@ -58,7 +58,6 @@ export default function Dashboard({ toast, onGoSettings, onCountChange }) {
     <>
       <div className="page-head">
         <h1>Boshqaruv paneli</h1>
-        <Visits toast={toast} />
       </div>
 
       {bankNotReady && (
@@ -103,6 +102,7 @@ export default function Dashboard({ toast, onGoSettings, onCountChange }) {
           </div>
           <div className="s">tekshirish kerak</div>
         </div>
+        <Visits toast={toast} today={data.todayVisits} />
         <div className="stat">
           <div className="t">Jami buyurtmalar</div>
           <div className="v">{data.totalOrders}</div>

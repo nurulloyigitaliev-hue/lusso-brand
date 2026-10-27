@@ -12,12 +12,14 @@ function dayLabel(day, i) {
   return `${WEEKDAYS[new Date(y, m - 1, d).getDay()]}, ${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}`;
 }
 
-// Mini App'ni bir kunda nechta mijoz ochgani (bir mijoz kuniga bir marta sanaladi)
-export default function Visits({ toast }) {
+// Boshqaruv panelidagi "Bugungi tashriflar" kartasi: Mini App'ni bugun nechta
+// mijoz ochgani. Bosilsa — oxirgi 7 kun (bir mijoz kuniga bir marta sanaladi)
+export default function Visits({ toast, today }) {
   const [days, setDays] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const open = async () => {
+    if (busy) return;
     setBusy(true);
     try {
       setDays((await api.visits()).days);
@@ -30,9 +32,18 @@ export default function Visits({ toast }) {
 
   return (
     <>
-      <button className="btn" onClick={open} disabled={busy}>
-        {busy ? 'Kuting…' : '👀 Tashriflar'}
-      </button>
+      <div
+        className="stat"
+        role="button"
+        tabIndex={0}
+        style={{ cursor: 'pointer' }}
+        onClick={open}
+        onKeyDown={(e) => e.key === 'Enter' && open()}
+      >
+        <div className="t">👀 Bugungi tashriflar</div>
+        <div className="v">{today ?? '—'}</div>
+        <div className="s">{busy ? 'Yuklanmoqda…' : "kishi ilovani ochdi · 7 kunlik ›"}</div>
+      </div>
 
       {days && (
         <Modal title="👀 Mini App tashriflari" onClose={() => setDays(null)}>

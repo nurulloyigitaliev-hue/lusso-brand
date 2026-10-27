@@ -28,6 +28,11 @@ export const VisitModel = {
     }
   },
 
+  // Bugun ilovani ochganlar soni
+  async today() {
+    return prisma.visit.count({ where: { day: dayKey() } });
+  },
+
   // Oxirgi `days` kun, bugundan boshlab: [{ day, count }]
   async daily(days = 7) {
     const keys = [];

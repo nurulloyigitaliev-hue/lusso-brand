@@ -102,9 +102,14 @@ export async function visits(req, res) {
 }
 
 export async function stats(req, res) {
-  const [data, lowStock] = await Promise.all([OrderModel.stats(), ProductModel.lowStock(3)]);
+  const [data, lowStock, todayVisits] = await Promise.all([
+    OrderModel.stats(),
+    ProductModel.lowStock(3),
+    VisitModel.today().catch(() => 0),
+  ]);
   res.json({
     ...data,
+    todayVisits,
     lowStock: lowStock.map((v) => ({
       product: v.product?.nameUz || '—',
       label: v.label,
