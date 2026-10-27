@@ -65,6 +65,8 @@ router.delete('/stories/:id', admin.deleteStory);
 router.get('/users', admin.listUsers);
 router.post('/broadcast', admin.broadcast);
 router.get('/broadcast', admin.broadcastHistory);
+router.get('/broadcast/status', admin.broadcastDeleteStatus);
+router.delete('/broadcast/:id', admin.removeBroadcast);
 
 // Sozlamalar
 router.get('/settings', admin.getSettings);

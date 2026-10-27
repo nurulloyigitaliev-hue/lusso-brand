@@ -118,6 +118,8 @@ export const api = {
 
   broadcast: (data) => request('/broadcast', { method: 'POST', body: JSON.stringify(data) }),
   broadcastHistory: () => request('/broadcast'),
+  deleteBroadcast: (id) => request(`/broadcast/${id}`, { method: 'DELETE' }),
+  broadcastStatus: () => request('/broadcast/status'),
 
   settings: () => request('/settings'),
   updateSettings: (data) => request('/settings', { method: 'PUT', body: JSON.stringify(data) }),

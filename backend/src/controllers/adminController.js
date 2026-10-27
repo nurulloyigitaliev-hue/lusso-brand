@@ -8,7 +8,13 @@ import OrderModel from '../models/Order.js';
 import UserModel from '../models/User.js';
 import SettingModel from '../models/Setting.js';
 import VisitModel from '../models/Visit.js';
-import { notifyStatus, notifyFixRequest, runBroadcast } from './botController.js';
+import {
+  notifyStatus,
+  notifyFixRequest,
+  runBroadcast,
+  startBroadcastDelete,
+  deleteStatus,
+} from './botController.js';
 import { botLink } from '../core/bot.js';
 
 // ---------------- KIRISH ----------------
@@ -289,6 +295,17 @@ export async function broadcast(req, res) {
   });
 
   res.json(result);
+}
+
+// Rassilkani barcha mijozlardan o'chirish — fonda ketadi, panel holatni so'rab turadi
+export async function removeBroadcast(req, res) {
+  const { job, error } = await startBroadcastDelete(req.params.id);
+  if (error) return res.status(400).json({ error });
+  res.json({ job });
+}
+
+export function broadcastDeleteStatus(req, res) {
+  res.json({ job: deleteStatus() });
 }
 
 export async function broadcastHistory(req, res) {

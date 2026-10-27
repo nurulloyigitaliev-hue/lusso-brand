@@ -1,8 +1,9 @@
 // Telegram bot instansiyasi (grammY)
 import path from 'path';
-import fs from 'fs';
+import sharp from 'sharp';
 import { Bot, InputFile, InputMediaBuilder } from 'grammy';
 import config from '../config/default.js';
+import { readUpload } from './uploads.js';
 
 if (!config.botToken) {
   console.warn('⚠️  BOT_TOKEN topilmadi (.env). Bot ishga tushmaydi, faqat API ishlaydi.');
@@ -40,39 +41,80 @@ export async function safeSendMessage(chatId, text, extra = {}) {
   }
 }
 
+// Yuborilgan rasmlarning Telegram'dagi file_id si ("/uploads/x.jpg" → file_id):
+// bir rasm har bir admin va mijozga qayta-qayta yuklanmaydi
+const photoIds = new Map();
+
+// Admin paneldagi rasm ramkasi sozlamasi ("#z=1.3&x=50") faylga tegishli emas
+const photoKey = (photo) => (typeof photo === 'string' ? photo.split('#')[0] : null);
+
+function rememberPhoto(key, msg) {
+  const fileId = msg?.photo?.at(-1)?.file_id;
+  if (fileId && /^(\/uploads\/|https?:\/\/)/.test(key || '')) photoIds.set(key, fileId);
+}
+
 /**
- * Rasm yuborish. photo quyidagilardan biri bo'lishi mumkin:
- *  - "/uploads/xxx.jpg"  → localdagi fayl (Telegramga to'g'ridan-to'g'ri yuklanadi)
- *  - "https://..."       → havola
- *  - file_id             → oldin yuborilgan rasmning id si (eng tez usul)
+ * Rasmni Telegram'ga yuborishga tayyorlaydi:
+ *  - avval yuborilgan bo'lsa — file_id (eng tez)
+ *  - "/uploads/xxx.jpg" — fayl diskdan, bo'lmasa bazadan o'qilib, Telegram'ga
+ *    to'g'ridan-to'g'ri yuklanadi (Telegram rasmni serverdan o'zi olib kelishiga
+ *    tayanmaymiz — server uxlab qolsa yoki manzil sozlanmagan bo'lsa ketmay qolardi)
+ *  - "https://..." yoki file_id — o'zgarishsiz
+ * Rasm topilmasa — null.
+ */
+async function preparePhoto(photo) {
+  const key = photoKey(photo);
+  if (!key) return photo || null;
+  if (photoIds.has(key)) return photoIds.get(key);
+  if (!key.startsWith('/uploads/')) return key;
+
+  const data = await readUpload(key);
+  if (!data) {
+    console.error(`⚠️  Rasm topilmadi: ${key}`);
+    return null;
+  }
+  return new InputFile(await telegramReady(data), path.basename(key));
+}
+
+// Telegram talabi: JPEG/PNG, eni + bo'yi 10 000 dan oshmasin. Boshqa format
+// (webp, heic) yoki juda katta rasm JPEG ga o'giriladi.
+async function telegramReady(data) {
+  try {
+    const m = await sharp(data).metadata();
+    const ok = ['jpeg', 'png'].includes(m.format) && data.length < 5e6 && m.width + m.height <= 10000;
+    if (ok) return data;
+    return await sharp(data)
+      .rotate()
+      .resize({ width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+  } catch {
+    return data;
+  }
+}
+
+/**
+ * Rasm yuborish. photo: "/uploads/xxx.jpg", "https://..." yoki file_id.
  * Muvaffaqiyatli bo'lsa message obyektini qaytaradi.
  */
 export async function safeSendPhoto(chatId, photo, caption, extra = {}) {
   if (!bot) return null;
+  const key = photoKey(photo);
   try {
-    const msg = await bot.api.sendPhoto(String(chatId), toPhoto(photo), {
+    const input = await preparePhoto(photo);
+    if (!input) return null;
+    const msg = await bot.api.sendPhoto(String(chatId), input, {
       caption,
       parse_mode: 'Markdown',
       ...extra,
     });
+    rememberPhoto(key, msg);
     return msg;
   } catch (err) {
+    photoIds.delete(key); // eskirgan file_id bo'lsa — keyingi safar fayldan yuklanadi
     console.error(`⚠️  ${chatId} ga rasm yuborilmadi: ${err.message}`);
     return null;
   }
-}
-
-export function toPhoto(photo) {
-  // Admin paneldagi rasm ramkasi sozlamasi ("#z=1.3&x=50") faylga tegishli emas
-  if (typeof photo === 'string') photo = photo.split('#')[0];
-  if (typeof photo === 'string' && photo.startsWith('/uploads/')) {
-    const filePath = path.join(config.uploadsDir, photo.replace('/uploads/', ''));
-    if (fs.existsSync(filePath)) return new InputFile(filePath);
-    // Diskda yo'q (server qayta ishga tushgan) — Telegram rasmni serverdan
-    // o'zi oladi, server esa uni bazadan beradi
-    if (config.publicUrl.startsWith('https://')) return config.publicUrl + photo;
-  }
-  return photo;
 }
 
 const CAPTION_MAX = 1024;
@@ -85,23 +127,45 @@ const CAPTION_MAX = 1024;
  */
 export async function safeSendWithPhotos(chatId, photos, text, extra = {}) {
   if (!bot) return false;
-  const list = [...new Set((photos || []).filter(Boolean))].slice(0, 10);
+  const list = [...new Set((photos || []).map(photoKey).filter(Boolean))].slice(0, 10);
 
   if (list.length === 1 && text.length <= CAPTION_MAX) {
     if (await safeSendPhoto(chatId, list[0], text, extra)) return true;
   } else if (list.length === 1) {
     await safeSendPhoto(chatId, list[0], undefined);
   } else if (list.length > 1) {
-    try {
-      await bot.api.sendMediaGroup(
-        String(chatId),
-        list.map((p) => InputMediaBuilder.photo(toPhoto(p)))
-      );
-    } catch (err) {
-      console.error(`⚠️  ${chatId} ga albom yuborilmadi: ${err.message}`);
-    }
+    await sendAlbum(chatId, list);
   }
   return safeSend(chatId, text, extra);
+}
+
+// Albomdagi bitta rasm yaroqsiz bo'lsa Telegram butun albomni rad etadi —
+// topilmagan rasmlar tashlab yuboriladi, albom baribir ketmasa rasmlar birma-bir yuboriladi
+async function sendAlbum(chatId, list) {
+  const ready = [];
+  for (const key of list) {
+    const input = await preparePhoto(key).catch(() => null);
+    if (input) ready.push({ key, input });
+  }
+
+  if (ready.length < 2) {
+    if (ready.length) await safeSendPhoto(chatId, ready[0].key, undefined);
+    return;
+  }
+
+  try {
+    const msgs = await bot.api.sendMediaGroup(
+      String(chatId),
+      ready.map((r) => InputMediaBuilder.photo(r.input))
+    );
+    msgs.forEach((m, i) => rememberPhoto(ready[i].key, m));
+  } catch (err) {
+    console.error(`⚠️  ${chatId} ga albom yuborilmadi: ${err.message}`);
+    for (const r of ready) {
+      photoIds.delete(r.key);
+      await safeSendPhoto(chatId, r.key, undefined);
+    }
+  }
 }
 
 export default bot;

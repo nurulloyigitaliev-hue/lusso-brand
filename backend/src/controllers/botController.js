@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { Keyboard, InlineKeyboard, InputFile } from 'grammy';
 import config from '../config/default.js';
 import prisma from '../database/connection.js';
-import { safeSend, safeSendMessage, safeSendPhoto, safeSendWithPhotos } from '../core/bot.js';
+import bot, { safeSend, safeSendMessage, safeSendPhoto, safeSendWithPhotos } from '../core/bot.js';
 import UserModel, { isWebUser } from '../models/User.js';
 import OrderModel, { canFixAddress } from '../models/Order.js';
 import SettingModel from '../models/Setting.js';
@@ -859,11 +859,69 @@ export async function runBroadcast({ text, imageUrl, buttonText, buttonUrl }) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ---------------- RASSILKANI O'CHIRISH (/o'chir) ----------------
+// ---------------- RASSILKANI O'CHIRISH (botda /o'chir, panelda 🗑 tugmasi) ----------------
 
 // Telegram bot xabarini faqat 48 soat ichida o'chirishga ruxsat beradi
 const DELETE_LIMIT = 48 * 60 * 60 * 1000;
-let deleting = false;
+
+// Hozirgi (yoki oxirgi) o'chirish jarayoni — bot ham, panel ham shuni ko'rsatadi:
+// { id, done, total, deleted, finished, error, message }
+let deleteJob = null;
+let deleteRun = null; // shu jarayon tugashini kutish uchun
+
+export const deleteStatus = () => deleteJob;
+const isDeleting = () => Boolean(deleteJob && !deleteJob.finished);
+
+// Rassilkani o'chirib bo'lmasa — sababi, bo'lsa — null
+function cantDelete(item) {
+  if (!item) return 'Rassilka topilmadi';
+  if (item.deletedAt) return "Bu rassilka allaqachon o'chirilgan";
+  if (Date.now() - item.createdAt.getTime() > DELETE_LIMIT) {
+    return "Telegram 48 soatdan eski xabarlarni o'chirishga ruxsat bermaydi";
+  }
+  return null;
+}
+
+function botIdOf() {
+  try {
+    return bot?.botInfo?.id;
+  } catch {
+    return undefined; // bot hali ishga tushmagan
+  }
+}
+
+/**
+ * O'chirishni fonda boshlaydi va darhol qaytadi: { job } yoki { error }.
+ * Mijozlar ko'p bo'lsa bir necha daqiqa ketadi — bot shu paytda ham boshqa
+ * xabarlarga javob beraveradi, panel esa holatni so'rab turadi.
+ */
+export async function startBroadcastDelete(id, api = bot?.api, botId = botIdOf()) {
+  if (isDeleting()) return { error: "Rassilka hozir o'chirilyapti, kuting…" };
+  if (!api || !botId) return { error: 'Bot ishlamayapti' };
+
+  // Tekshiruvdan oldin band qilinadi — bot va panel bir vaqtda bossa ham ikkinchisi kutadi
+  const prev = deleteJob;
+  const job = { id: Number(id), done: 0, total: 0, deleted: 0, finished: false, error: null, message: '' };
+  deleteJob = job;
+
+  const item = await prisma.broadcast.findUnique({ where: { id: job.id } }).catch(() => null);
+  const why = cantDelete(item);
+  if (why) {
+    deleteJob = prev;
+    return { error: why };
+  }
+
+  deleteRun = deleteBroadcast(api, botId, item, job)
+    .catch((err) => {
+      console.error('deleteBroadcast:', err);
+      job.error = err.message;
+    })
+    .finally(() => {
+      job.message = resultText(job);
+      job.finished = true;
+    });
+  return { job };
+}
 
 // /o'chir — oxirgi rassilkani ko'rsatadi va o'chirishni tasdiqlashni so'raydi
 export async function onDeleteBroadcastCommand(ctx) {
@@ -904,92 +962,73 @@ export async function onDeleteBroadcastCancel(ctx) {
   return ctx.editMessageText("Bekor qilindi — rassilka o'chirilmadi.").catch(() => {});
 }
 
-// "🗑 Ha, o'chirish" — o'chirish fonda ketadi (bot boshqa xabarlarga javob berishda davom etadi)
+// "🗑 Ha, o'chirish" — jarayon holati shu xabarda yangilanib turadi
 export async function onDeleteBroadcastConfirm(ctx) {
   if (!(await isAdminUser(ctx.from.id))) {
     return ctx.answerCallbackQuery({ text: 'Bu tugma faqat adminlar uchun', show_alert: true });
   }
-  if (deleting) {
-    return ctx.answerCallbackQuery({ text: "Rassilka hozir o'chirilyapti, kuting…", show_alert: true });
-  }
 
-  const item = await prisma.broadcast.findUnique({ where: { id: Number(ctx.match[1]) } });
-  if (!item || item.deletedAt) {
-    await ctx.answerCallbackQuery({ text: "Bu rassilka allaqachon o'chirilgan" });
-    return ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch(() => {});
+  const { job, error } = await startBroadcastDelete(ctx.match[1], ctx.api, ctx.me.id);
+  if (error) {
+    await ctx.answerCallbackQuery({ text: error, show_alert: true }).catch(() => {});
+    if (!isDeleting()) await ctx.editMessageReplyMarkup({ reply_markup: { inline_keyboard: [] } }).catch(() => {});
+    return;
   }
 
   await ctx.answerCallbackQuery().catch(() => {});
-  await ctx.editMessageText("⏳ Rassilka mijozlardan o'chirilmoqda…").catch(() => {});
+  const chatId = ctx.chat.id;
+  const messageId = ctx.callbackQuery.message.message_id;
+  const edit = (text) => ctx.api.editMessageText(chatId, messageId, text).catch(() => {});
+  await edit("⏳ Rassilka mijozlardan o'chirilmoqda…");
 
-  // Bot yangilanishlarni navbat bilan oladi — tekshiruv va shu qator orasida
-  // ikkinchi bosish kirib qolmaydi
-  deleting = true;
-  const status = { chatId: ctx.chat.id, messageId: ctx.callbackQuery.message.message_id };
-  deleteBroadcast(ctx.api, ctx.me.id, item, status)
-    .catch((err) => {
-      console.error('deleteBroadcast:', err);
-      return ctx.api.editMessageText(status.chatId, status.messageId, `❌ Xatolik: ${err.message}`);
-    })
-    .catch(() => {})
-    .finally(() => {
-      deleting = false;
-    });
+  // Har 15 soniyada holat yangilanadi — admin jarayon ketayotganini ko'rsin
+  const timer = setInterval(
+    () => edit(`⏳ Rassilka o'chirilmoqda… ${job.done}/${job.total}\n🗑 O'chirildi: ${job.deleted}`),
+    15000
+  );
+  deleteRun.then(() => {
+    clearInterval(timer);
+    edit(job.message);
+  });
 }
 
-async function deleteBroadcast(api, botId, item, status) {
-  const progress = progressReporter(api, status);
+function resultText(job) {
+  if (job.error) return `❌ Xatolik: ${job.error}`;
+  if (!job.deleted) return "⚠️ Rassilka hech bir chatdan topilmadi — o'chirilmadi.";
+  return (
+    `✅ Rassilka o'chirildi: ${job.deleted} ta chatdan.` +
+    (job.total > job.deleted
+      ? `\n\n${job.total - job.deleted} ta chatda topilmadi (botni bloklagan yoki xabarni o'zi o'chirgan).`
+      : '')
+  );
+}
+
+async function deleteBroadcast(api, botId, item, job) {
   const stored = Array.isArray(item.messages) ? item.messages : [];
-  let deleted = 0;
-  let total;
 
   if (stored.length) {
     // Yangi rassilkalar: har bir xabarning raqami saqlangan
-    total = stored.length;
-    for (const [i, [chatId, messageId]] of stored.entries()) {
-      if (await tgCall(() => api.deleteMessage(chatId, messageId))) deleted++;
-      await progress(i + 1, total, deleted);
+    job.total = stored.length;
+    for (const [chatId, messageId] of stored) {
+      if (await tgCall(() => api.deleteMessage(chatId, messageId))) job.deleted++;
+      job.done++;
       await sleep(35);
     }
   } else {
     // Xabar raqamlari saqlanmagan (eski rassilka) — har bir chatdan qidirib topiladi
     const users = await UserModel.allTelegramIds();
-    total = users.length;
-    for (const [i, u] of users.entries()) {
-      if (await findAndDelete(api, botId, u.telegramId, item)) deleted++;
-      await progress(i + 1, total, deleted);
+    job.total = users.length;
+    for (const u of users) {
+      if (await findAndDelete(api, botId, u.telegramId, item)) job.deleted++;
+      job.done++;
       await sleep(35);
     }
   }
 
-  // Hech narsa o'chmagan bo'lsa — belgilamaymiz, /o'chir ni qayta urinish mumkin
-  if (deleted) {
+  // Hech narsa o'chmagan bo'lsa — belgilamaymiz, qayta urinish mumkin
+  if (job.deleted) {
     await prisma.broadcast.update({ where: { id: item.id }, data: { deletedAt: new Date(), messages: [] } });
   }
-
-  const text = deleted
-    ? `✅ Rassilka o'chirildi: ${deleted} ta chatdan.` +
-      (total > deleted
-        ? `\n\n${total - deleted} ta chatda topilmadi (botni bloklagan yoki xabarni o'zi o'chirgan).`
-        : '')
-    : "⚠️ Rassilka hech bir chatdan topilmadi — o'chirilmadi.";
-  await api.editMessageText(status.chatId, status.messageId, text).catch(() => {});
-}
-
-// Har 15 soniyada holat xabarini yangilab turadi — admin jarayon ketayotganini ko'rsin
-function progressReporter(api, status) {
-  let last = Date.now();
-  return async (done, total, deleted) => {
-    if (Date.now() - last < 15000) return;
-    last = Date.now();
-    await api
-      .editMessageText(
-        status.chatId,
-        status.messageId,
-        `⏳ Rassilka o'chirilmoqda… ${done}/${total}\n🗑 O'chirildi: ${deleted}`
-      )
-      .catch(() => {});
-  };
 }
 
 /**

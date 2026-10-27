@@ -37,6 +37,22 @@ export async function saveUpload(data, ext, mime) {
   return `/uploads/${name}`;
 }
 
+// "/uploads/..." faylining o'zi: diskdan, bo'lmasa bazadan. Topilmasa null.
+export async function readUpload(url) {
+  if (typeof url !== 'string' || !url.startsWith('/uploads/')) return null;
+  const rel = url.split('#')[0].split('?')[0].replace('/uploads/', '');
+  const file = path.resolve(config.uploadsDir, rel);
+  if (!file.startsWith(config.uploadsDir + path.sep)) return null;
+  try {
+    return await fs.promises.readFile(file);
+  } catch {
+    const row = await prisma.uploadedFile
+      .findUnique({ where: { name: path.basename(rel) } })
+      .catch(() => null);
+    return row ? Buffer.from(row.data) : null;
+  }
+}
+
 export function isImageAvailable(url) {
   if (typeof url !== 'string' || !url.startsWith('/uploads/')) return Boolean(url);
   const name = url.split('#')[0].split('?')[0].replace('/uploads/', '');

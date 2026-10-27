@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import api from '../api';
 import ImageUploader from '../components/ImageUploader';
 
+// Telegram bot xabarini faqat 48 soat ichida o'chirishga ruxsat beradi
+const DELETE_LIMIT = 48 * 60 * 60 * 1000;
+const canDelete = (h) => !h.deletedAt && Date.now() - new Date(h.createdAt).getTime() < DELETE_LIMIT;
+
 export default function BroadcastPage({ toast }) {
   const [text, setText] = useState('');
   const [images, setImages] = useState([]);
@@ -10,13 +14,50 @@ export default function BroadcastPage({ toast }) {
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState([]);
   const [users, setUsers] = useState(0);
+  // O'chirish jarayoni (serverda fonda ketadi): { id, done, total, deleted, finished, message }
+  const [job, setJob] = useState(null);
+  const deleting = Boolean(job && !job.finished);
 
   const load = () => {
     api.broadcastHistory().then(setHistory).catch(() => {});
     api.users().then((list) => setUsers(list.length)).catch(() => {});
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    // Botdagi /o'chir bilan boshlangan jarayon ham ko'rinsin
+    api.broadcastStatus().then((r) => setJob(r.job)).catch(() => {});
+  }, []);
+
+  // O'chirish tugaguncha holat har 2.5 soniyada so'raladi
+  useEffect(() => {
+    if (!deleting) return;
+    const id = setTimeout(async () => {
+      try {
+        const { job: next } = await api.broadcastStatus();
+        setJob(next);
+        if (next?.finished) {
+          toast(next.message, Boolean(next.error));
+          load();
+        }
+      } catch {
+        setJob({ ...job }); // tarmoq uzilsa — qayta so'raladi
+      }
+    }, 2500);
+    return () => clearTimeout(id);
+  }, [job]);
+
+  const remove = async (h) => {
+    const preview = h.text.length > 80 ? h.text.slice(0, 80) + '…' : h.text;
+    if (!confirm(`Rassilka ${h.sentCount} ta mijozning chatidan o'chirilsinmi?\n\n${preview}`)) return;
+    try {
+      const { job: started } = await api.deleteBroadcast(h.id);
+      setJob(started);
+      toast("O'chirish boshlandi — biroz vaqt oladi");
+    } catch (e) {
+      toast(e.message, true);
+    }
+  };
 
   const send = async () => {
     if (!text.trim()) return toast('Matn kiriting', true);
@@ -93,8 +134,8 @@ export default function BroadcastPage({ toast }) {
             {busy ? 'Yuborilmoqda... (biroz vaqt oladi)' : '📢 Hammaga yuborish'}
           </button>
           <div className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>
-            Xato yuborildimi? Botga <b>/o'chir</b> deb yozing — oxirgi rassilka barcha mijozlardan
-            o'chadi (48 soat ichida).
+            Xato yuborildimi? Tarixdagi <b>🗑 O'chirish</b> tugmasini bosing (yoki botga{' '}
+            <b>/o'chir</b> yozing) — rassilka barcha mijozlardan o'chadi (48 soat ichida).
           </div>
         </div>
 
@@ -109,10 +150,25 @@ export default function BroadcastPage({ toast }) {
                   {h.text.slice(0, 90)}
                   {h.text.length > 90 ? '...' : ''}
                 </div>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  ✅ {h.sentCount} · ❌ {h.failCount} ·{' '}
-                  {new Date(h.createdAt).toLocaleString('ru-RU')}
-                  {h.deletedAt && " · 🗑 o'chirilgan"}
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}
+                >
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    ✅ {h.sentCount} · ❌ {h.failCount} ·{' '}
+                    {new Date(h.createdAt).toLocaleString('ru-RU')}
+                    {h.deletedAt && " · 🗑 o'chirilgan"}
+                  </div>
+                  {deleting && job.id === h.id ? (
+                    <span className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                      ⏳ {job.done}/{job.total || '…'}
+                    </span>
+                  ) : (
+                    canDelete(h) && (
+                      <button className="btn danger sm" onClick={() => remove(h)} disabled={deleting}>
+                        🗑 O'chirish
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             ))
