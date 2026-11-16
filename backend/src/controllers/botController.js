@@ -6,7 +6,7 @@ import config from '../config/default.js';
 import prisma from '../database/connection.js';
 import bot, { safeSend, safeSendMessage, safeSendPhoto, safeSendWithPhotos } from '../core/bot.js';
 import UserModel, { isWebUser } from '../models/User.js';
-import OrderModel, { canFixAddress } from '../models/Order.js';
+import OrderModel, { canFixAddress, awaitsReceipt } from '../models/Order.js';
 import SettingModel from '../models/Setting.js';
 import { applyPrices } from '../core/prices.js';
 import { clearCache } from '../core/cache.js';
@@ -181,6 +181,7 @@ export async function onStart(ctx) {
   });
 
   pendingFix.delete(String(ctx.from.id));
+  pendingReceipt.delete(String(ctx.from.id));
   await sendMainMenu(ctx, user.language);
   if (!user.phone) await askPhone(ctx, user.language);
 }
@@ -244,6 +245,9 @@ export async function onText(ctx) {
   // "Manzilni qayta kiriting" bosilgan bo'lsa — shu xabar yangi manzil
   const fixOrder = await fixTarget(ctx, user);
   if (fixOrder) return saveFixedAddress(ctx, user, fixOrder, text);
+
+  // "🧾 Chekni yuborish" bosilgan-u, rasm o'rniga matn yozilgan bo'lsa — eslatamiz
+  if (waitingReceiptText(ctx)) return ctx.reply(L.receiptNeedPhoto, { parse_mode: 'Markdown' });
 
   if (text === L.menuOrders) return sendMyOrders(ctx, user);
 
@@ -358,7 +362,14 @@ export async function onMenuAction(ctx) {
 export async function onPhoto(ctx) {
   if (ctx.chat?.type !== 'private') return;
   const doc = ctx.message.document;
-  if (doc && !String(doc.mime_type || '').startsWith('image/')) return;
+  if (doc && !String(doc.mime_type || '').startsWith('image/')) {
+    // "Chekni yuborish" dan keyin PDF va h.k. yuborilsa — rasm kerakligini aytamiz
+    if (receiptPending(ctx)) {
+      const u = await UserModel.findByTelegramId(ctx.from.id).catch(() => null);
+      return ctx.reply(t(u?.language).receiptNeedPhoto, { parse_mode: 'Markdown' });
+    }
+    return;
+  }
 
   const user = await UserModel.findOrCreate({
     id: ctx.from.id,
@@ -368,7 +379,7 @@ export async function onPhoto(ctx) {
   });
   const L = t(user.language);
 
-  const order = await OrderModel.awaitingReceipt(user.id);
+  const order = await receiptTarget(ctx, user);
   if (!order) return ctx.reply(L.receiptNoOrder, { parse_mode: 'Markdown' });
 
   let url;
@@ -379,9 +390,86 @@ export async function onPhoto(ctx) {
     return ctx.reply(L.receiptFailed);
   }
 
+  pendingReceipt.delete(String(ctx.from.id));
   const updated = await OrderModel.attachReceipt(order.id, url);
   await ctx.reply(L.receiptFor(updated.orderNumber), { parse_mode: 'Markdown' });
+  // Adminlarga: chek rasmi + "✅ Tasdiqlash" tugmasi
   notifyAdminsReceipt(updated).catch(() => {});
+}
+
+// "🧾 Chekni yuborish" bosgan mijozlar: telegramId → { orderId, at }
+const pendingReceipt = new Map();
+const RECEIPT_TTL = 24 * 60 * 60 * 1000; // rasm shu vaqt ichida aynan shu buyurtmaga biriktiriladi
+const RECEIPT_NUDGE = 15 * 60 * 1000; // shu vaqt ichida matn yozilsa — "rasm yuboring" deymiz
+
+function receiptPending(ctx, ttl = RECEIPT_TTL) {
+  const pending = pendingReceipt.get(String(ctx.from.id));
+  return Boolean(pending && Date.now() - pending.at < ttl);
+}
+
+// Botning "📸 chek rasmini yuboring" xabariga javob qilinganmi
+function repliedToReceiptAsk(ctx) {
+  const replied = ctx.message?.reply_to_message;
+  return replied?.from?.id === ctx.me.id && Boolean(replied.text?.startsWith('🧾') && ORDER_NO.test(replied.text));
+}
+
+function waitingReceiptText(ctx) {
+  return receiptPending(ctx, RECEIPT_NUDGE) || repliedToReceiptAsk(ctx);
+}
+
+/**
+ * Chek qaysi buyurtmaniki:
+ *   1. "🧾 Chekni yuborish" bosilgan buyurtma
+ *   2. rasm botning buyurtma raqami yozilgan xabariga javob qilib yuborilgan bo'lsa — o'sha buyurtma
+ *      (server qayta ishga tushib, xotira tozalanganda ham ishlaydi)
+ *   3. aks holda — eng oxirgi to'lanmagan buyurtma
+ */
+async function receiptTarget(ctx, user) {
+  let order = null;
+  const pending = pendingReceipt.get(String(ctx.from.id));
+  if (pending && Date.now() - pending.at < RECEIPT_TTL) order = await OrderModel.byId(pending.orderId);
+
+  if (!order || order.userId !== user.id || !awaitsReceipt(order)) {
+    const replied = ctx.message.reply_to_message;
+    const no = replied?.from?.id === ctx.me.id && ORDER_NO.exec(replied.text || replied.caption || '')?.[0];
+    order = no ? await OrderModel.byNumber(no) : null;
+  }
+
+  if (order && order.userId === user.id && awaitsReceipt(order)) return order;
+  return OrderModel.awaitingReceipt(user.id);
+}
+
+// Mijoz: buyurtma xabaridagi "🧾 Chekni yuborish" tugmasi
+export async function onReceiptStart(ctx) {
+  const user = await UserModel.findOrCreate({
+    id: ctx.from.id,
+    firstName: ctx.from.first_name,
+    lastName: ctx.from.last_name,
+    username: ctx.from.username,
+  });
+  const lang = user.language;
+  const L = t(lang);
+  const order = await OrderModel.byId(ctx.match[1]);
+  await ctx.answerCallbackQuery();
+
+  if (!order || order.userId !== user.id) return ctx.reply(L.receiptNoOrder, { parse_mode: 'Markdown' });
+  if (!awaitsReceipt(order)) {
+    const status = STATUS_LABEL[order.status]?.[lang] || order.status;
+    return ctx.reply(L.receiptClosed(order.orderNumber, status), { parse_mode: 'Markdown' });
+  }
+
+  pendingFix.delete(String(ctx.from.id));
+  pendingReceipt.set(String(ctx.from.id), { orderId: order.id, at: Date.now() });
+  return ctx.reply(L.receiptAsk(order.orderNumber, money(order.total)), {
+    parse_mode: 'Markdown',
+    reply_markup: { force_reply: true, input_field_placeholder: L.receiptPlaceholder },
+  });
+}
+
+// "🧾 Chekni yuborish" tugmasi (buyurtma xabari va "Buyurtmalarim" ostida)
+function receiptButton(L, order, withNumber = false) {
+  const text = withNumber ? `${L.sendReceiptBtn} · ${order.orderNumber}` : L.sendReceiptBtn;
+  return InlineKeyboard.text(text, `rcpt:send:${order.id}`);
 }
 
 // Telegram'dagi faylni /uploads ga (disk + baza) saqlaydi — admin panelda chek ko'rinsin
@@ -450,6 +538,7 @@ export async function onFixStart(ctx) {
     return ctx.reply(L.fixClosed, { parse_mode: 'Markdown' });
   }
 
+  pendingReceipt.delete(String(ctx.from.id));
   pendingFix.set(String(ctx.from.id), { orderId: order.id, at: Date.now() });
   return ctx.reply(L.fixAsk(order.orderNumber), {
     parse_mode: 'Markdown',
@@ -508,7 +597,11 @@ async function sendMyOrders(ctx, user) {
     return `🧾 *${o.orderNumber}* — ${money(o.total)}\n   ${status} · ${date}${track}`;
   });
 
-  return ctx.reply(`${L.yourOrders}\n\n${lines.join('\n\n')}`, { parse_mode: 'Markdown' });
+  // To'lovi kutilayotgan buyurtmalar uchun "🧾 Chekni yuborish" tugmalari
+  const unpaid = orders.filter((o) => o.status === 'PENDING_PAYMENT').slice(0, 5);
+  const keyboard = unpaid.length ? InlineKeyboard.from(unpaid.map((o) => [receiptButton(L, o, true)])) : undefined;
+
+  return ctx.reply(`${L.yourOrders}\n\n${lines.join('\n\n')}`, { parse_mode: 'Markdown', reply_markup: keyboard });
 }
 
 // ---------------- XABARNOMALAR (API dan chaqiriladi) ----------------
@@ -531,9 +624,13 @@ export async function notifyOrderCreated(order) {
     bankHolder: s.bankHolder,
   });
 
-  const keyboard = new InlineKeyboard()
-    .url('💬 WhatsApp', `https://wa.me/${PHONE_INTL}`)
-    .url('✈️ Telegram', `https://t.me/+${PHONE_INTL}`);
+  const keyboard = InlineKeyboard.from([
+    [receiptButton(L, order)],
+    [
+      InlineKeyboard.url('💬 WhatsApp', `https://wa.me/${PHONE_INTL}`),
+      InlineKeyboard.url('✈️ Telegram', `https://t.me/+${PHONE_INTL}`),
+    ],
+  ]);
 
   await safeSendWithPhotos(
     user.telegramId,

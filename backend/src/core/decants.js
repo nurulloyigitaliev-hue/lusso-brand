@@ -20,6 +20,13 @@ const PRICE_10 = 12000;
 const PRICE_20 = 22000;
 const STOCK = 50;
 
+const NOTE_UZ = 'Premium luks sifatli atirlar';
+const NOTE_RU = 'Премиальные ароматы люкс-качества';
+
+// Avvalgi standart yozuv: bazada o'zgartirilmay turgan bo'lsa — yangisiga almashtiriladi
+// (admin o'zi yozgan matnga tegilmaydi)
+const OLD_NOTE_UZ = 'Asl atirdan qora metall idishga quyib beriladi';
+
 const CATEGORY = {
   slug: DECANT_SLUG,
   nameUz: 'Gramli Atirlar',
@@ -34,8 +41,9 @@ const CATEGORY = {
     img('idish-ishlatish'),
     img('idish-ichi'),
   ],
-  noteUz: "Asl atirdan qora metall idishga quyib beriladi\n10 ml — 12 000 ₩  ·  20 ml — 22 000 ₩",
-  noteRu: 'Разливаем из оригинального флакона в чёрный металлический атомайзер\n10 мл — 12 000 ₩  ·  20 мл — 22 000 ₩',
+  // Rasmlar ostidagi yozuv — admin panel → Story va kategoriyalar → ✏️ dan o'zgartiriladi
+  noteUz: NOTE_UZ,
+  noteRu: NOTE_RU,
 };
 
 // [nomi, brend, rasm, hid (uz), hid (ru)]
@@ -65,7 +73,14 @@ const DECANTS = [
 
 export async function ensureDecants() {
   try {
-    if (await prisma.category.findUnique({ where: { slug: DECANT_SLUG } })) return;
+    const existing = await prisma.category.findUnique({ where: { slug: DECANT_SLUG } });
+    if (existing) {
+      if (existing.noteUz.startsWith(OLD_NOTE_UZ)) {
+        await prisma.category.update({ where: { id: existing.id }, data: { noteUz: NOTE_UZ, noteRu: NOTE_RU } });
+        console.log(`💧 "${existing.nameUz}" yozuvi yangilandi: ${NOTE_UZ}`);
+      }
+      return;
+    }
 
     const category = await prisma.category.create({ data: CATEGORY });
 

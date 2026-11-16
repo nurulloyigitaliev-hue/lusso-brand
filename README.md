@@ -191,7 +191,7 @@ Narx uchun esa `db:prices` ishlating — u hech narsani o'chirmaydi.
 1. Mijoz Mini App'da mahsulot tanlaydi → o'lcham → savat
 2. Manzil va telefonni kiritadi → **Tasdiqlash**
 3. Bank rekvizitlari chiqadi → to'laydi → **chek rasmini yuklaydi**
-4. Botdan mijozga buyurtma raqami va rekvizitlar keladi
+4. Botdan mijozga buyurtma raqami, rekvizitlar va **🧾 Chekni yuborish** tugmasi keladi
 5. Sizga (adminga) Telegramda xabar keladi
 6. Admin panelda buyurtmani ochasiz → chekni ko'rasiz → **Tasdiqlangan** qilasiz
 7. 운송장번호 (tracking) kiritasiz → mijozga avtomatik xabar boradi
@@ -199,6 +199,18 @@ Narx uchun esa `db:prices` ishlating — u hech narsani o'chirmaydi.
 **Chek:** mijoz chekni ilovada yuklasa ham, botga rasm qilib tashlasa ham, sizga botda
 "🧾 Chek yuborildi" deb chek rasmi keladi, tagida **✅ Tasdiqlash** tugmasi — bossangiz
 buyurtma tasdiqlanadi va mijozga xabar ketadi (panelga kirish shart emas).
+
+Chek yuborishning uch yo'li:
+- **Ilovada** — to'lov oynasida. Mijoz bank ilovasiga o'tib, qaytib kirganda (ilova
+  yopilib qolgan bo'lsa ham) shu oyna o'zi qayta ochiladi. «Profil → Buyurtmalarim»da
+  ham to'lanmagan buyurtma yonida **Chek yuborish** tugmasi turadi.
+- **Botda tugma bilan** — buyurtma xabaridagi (yoki «📦 Buyurtmalarim»dagi)
+  **🧾 Chekni yuborish** → bot rasm so'raydi → rasm aynan shu buyurtmaga biriktiriladi.
+- **Botga shunchaki rasm** — eng oxirgi to'lanmagan buyurtmaga biriktiriladi.
+
+**Katalogdagi yozuv** (masalan, Gramli Atirlar rasmlari ostidagi "Premium luks sifatli
+atirlar"): Admin panel → **Story va kategoriyalar** → kategoriya yonidagi ✏️ →
+"Katalogdagi yozuv". Bo'sh qoldirilsa — yozuv chiqmaydi.
 
 **Manzil xato bo'lsa:** buyurtmani oching → **⚠️ Ma'lumot xato kiritildi**. Mijozga
 "Manzilni qayta kiriting" xabari boradi: manzilni botga yozib yuboradi yoki

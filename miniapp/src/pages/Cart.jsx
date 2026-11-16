@@ -132,7 +132,10 @@ export default function Cart({
             <b>{t.upsellTitle(lang === 'ru' ? upsell.nameRu : upsell.nameUz)}</b>
             {t.upsellText(money(upsell.price))}
           </div>
-          <div
+          <button
+            type="button"
+            role="switch"
+            aria-checked={upsellOn}
             className={`switch ${upsellOn ? 'on' : ''}`}
             onClick={() => {
               haptic('light');
@@ -140,7 +143,7 @@ export default function Cart({
             }}
           >
             <i />
-          </div>
+          </button>
         </div>
       )}
 
