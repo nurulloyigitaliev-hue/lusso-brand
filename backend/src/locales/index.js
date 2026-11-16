@@ -28,12 +28,19 @@ export const texts = {
       `📞 *Biz bilan bog'laning*\n\nMahsulot, o'lcham, to'lov yoki yetkazib berish bo'yicha savollaringiz bo'lsa — bizga yozing, mutaxassisimiz tez orada javob beradi.\n\n📱 WhatsApp / Telegram: *${phone}*\n📸 Instagram: [lusso_brand.kr](${INSTAGRAM_URL})\n🕙 Har kuni 10:00 — 22:00 (Koreya vaqti)`,
     openShopHint: 'Do\'konni ochish uchun pastdagi tugmani bosing 👇',
     orderCreated: (o) =>
-      `✅ *Buyurtmangiz qabul qilindi!*\n\n🧾 Buyurtma: *${o.orderNumber}*\n💰 Jami: *${money(o.total)}*\n\n💳 To'lov uchun:\n\`${o.bankAccount}\`\n${o.bankName} — ${o.bankHolder}\n\n⚠️ To'lovni amalga oshirib, chek rasmini yuboring. Tasdiqlangach, buyurtmangiz jo'natiladi 📦`,
+      `✅ *Buyurtmangiz qabul qilindi!*\n\n🧾 Buyurtma: *${o.orderNumber}*\n💰 Jami: *${money(o.total)}*\n\n💳 To'lov uchun:\n\`${o.bankAccount}\`\n${o.bankName} — ${o.bankHolder}\n\n⚠️ To'lovni amalga oshirgach, pastdagi *«🧾 Chekni yuborish»* tugmasini bosib, chek rasmini yuboring. Tasdiqlangach, buyurtmangiz jo'natiladi 📦`,
     receiptReceived: 'Chek qabul qilindi ✅\nAdmin tekshirgach sizga xabar beramiz.',
     receiptFor: (no) => `🧾 *Chek qabul qilindi* ✅\n\nBuyurtma: *${no}*\nAdmin tekshirgach sizga xabar beramiz.`,
     receiptNoOrder:
       "Rasm uchun rahmat! 🙏\n\nTo'lov kutilayotgan buyurtmangiz topilmadi. Savolingiz bo'lsa — WhatsApp yoki Telegram orqali yozing: *010-5790-4777*",
     receiptFailed: "⚠️ Chekni saqlab bo'lmadi. Iltimos, rasmni qaytadan yuboring.",
+    sendReceiptBtn: '🧾 Chekni yuborish',
+    receiptAsk: (no, sum) =>
+      `🧾 Buyurtma *${no}* — *${sum}*\n\n📸 To'lov chekining rasmini (skrinshot) shu yerga yuboring — pastdagi 📎 tugmasini bosib, rasmni tanlang 👇`,
+    receiptPlaceholder: '📎 Chek rasmini yuboring',
+    receiptNeedPhoto: "📸 Chekni *rasm* (skrinshot) qilib yuboring — pastdagi 📎 tugmasini bosib, rasmni tanlang.",
+    receiptClosed: (no, status) =>
+      `ℹ️ Buyurtma *${no}* holati: *${status}*\n\nBu buyurtma uchun chek endi kerak emas. Savollar bo'lsa: *010-5790-4777* (WhatsApp / Telegram).`,
     fixRequest: (o, addr) =>
       `⚠️ *Buyurtmadagi ma'lumot xato kiritilgan*\n\n🧾 Buyurtma: *${o.orderNumber}*\n📍 Siz kiritgan manzil: ${addr}\n\nBu manzil xato yoki to'liq emas — buyurtmani jo'nata olmaymiz. Iltimos, to'g'ri manzilni qayta kiriting 👇\n\n✍️ *Shu yerda* — manzilni botga bitta xabar qilib yozasiz\n📲 *Ilovada* — do'kon ochiladi, manzilni formaga kiritasiz`,
     fixInBot: '✍️ Manzilni qayta kiriting',
@@ -83,12 +90,19 @@ export const texts = {
       `📞 *Связаться с нами*\n\nЕсть вопросы о товаре, размере, оплате или доставке? Напишите нам — специалист ответит в ближайшее время.\n\n📱 WhatsApp / Telegram: *${phone}*\n📸 Instagram: [lusso_brand.kr](${INSTAGRAM_URL})\n🕙 Ежедневно 10:00 — 22:00 (по Корее)`,
     openShopHint: 'Нажмите кнопку ниже, чтобы открыть магазин 👇',
     orderCreated: (o) =>
-      `✅ *Заказ принят!*\n\n🧾 Заказ: *${o.orderNumber}*\n💰 Итого: *${money(o.total)}*\n\n💳 Для оплаты:\n\`${o.bankAccount}\`\n${o.bankName} — ${o.bankHolder}\n\n⚠️ Оплатите и отправьте скриншот чека. После подтверждения заказ будет отправлен 📦`,
+      `✅ *Заказ принят!*\n\n🧾 Заказ: *${o.orderNumber}*\n💰 Итого: *${money(o.total)}*\n\n💳 Для оплаты:\n\`${o.bankAccount}\`\n${o.bankName} — ${o.bankHolder}\n\n⚠️ После оплаты нажмите *«🧾 Отправить чек»* ниже и отправьте фото чека. После подтверждения заказ будет отправлен 📦`,
     receiptReceived: 'Чек получен ✅\nМы сообщим после проверки.',
     receiptFor: (no) => `🧾 *Чек получен* ✅\n\nЗаказ: *${no}*\nМы сообщим после проверки.`,
     receiptNoOrder:
       'Спасибо за фото! 🙏\n\nЗаказ, ожидающий оплаты, не найден. Есть вопросы — напишите в WhatsApp или Telegram: *010-5790-4777*',
     receiptFailed: '⚠️ Не удалось сохранить чек. Пожалуйста, отправьте фото ещё раз.',
+    sendReceiptBtn: '🧾 Отправить чек',
+    receiptAsk: (no, sum) =>
+      `🧾 Заказ *${no}* — *${sum}*\n\n📸 Отправьте сюда фото (скриншот) чека об оплате — нажмите 📎 внизу и выберите фото 👇`,
+    receiptPlaceholder: '📎 Отправьте фото чека',
+    receiptNeedPhoto: '📸 Отправьте чек *фотографией* (скриншотом) — нажмите 📎 внизу и выберите фото.',
+    receiptClosed: (no, status) =>
+      `ℹ️ Заказ *${no}*: *${status}*\n\nЧек для этого заказа больше не нужен. По вопросам: *010-5790-4777* (WhatsApp / Telegram).`,
     fixRequest: (o, addr) =>
       `⚠️ *В заказе указаны неверные данные*\n\n🧾 Заказ: *${o.orderNumber}*\n📍 Ваш адрес: ${addr}\n\nАдрес неверный или неполный — мы не можем отправить заказ. Пожалуйста, введите правильный адрес 👇\n\n✍️ *Здесь* — напишите адрес боту одним сообщением\n📲 *В приложении* — откроется магазин, введёте адрес в форму`,
     fixInBot: '✍️ Ввести адрес заново',

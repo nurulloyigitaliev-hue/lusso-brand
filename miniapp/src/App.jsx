@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import api from './api';
 import { dict } from './i18n';
-import { useApp, useCart, useFav, cartLink, importCartFromUrl } from './store';
+import { useApp, useCart, useFav, cartLink, importCartFromUrl, keyOf } from './store';
 import { haptic, showBackButton, isTelegram, openLink, closeApp } from './telegram';
 import { hideSplash } from './splash';
 import { flyToCart } from './fx';
 import { isDecant, DECANT_MIN, decantQty } from './constants';
 import { filterCatalog } from './catalog';
+import { readPendingPay, savePendingPay, clearPendingPay } from './pendingPay';
 
 import Onboarding from './components/Onboarding';
 import BottomNav from './components/BottomNav';
@@ -30,6 +31,12 @@ const cameWithCart = !isTelegram() && importCartFromUrl();
 
 // Botdagi "📲 Ilovada qayta kiritish" tugmasi: ?fix=<buyurtma id> — manzil oynasi darhol ochiladi
 const fixFromBot = Number(new URLSearchParams(window.location.search).get('fix')) || null;
+
+// Sozlamalardagi bank rekvizitlari (to'lov oynasi uchun)
+const bankOf = (s) => (s?.bankAccount ? { name: s.bankName, account: s.bankAccount, holder: s.bankHolder } : null);
+
+// Ilova orqa fonga o'tib, shuncha vaqtdan keyin qaytsa — yangi buyurtma cheki so'raladi
+const RESUME_FRESH = 2 * 60 * 60 * 1000;
 
 export default function App() {
   const { lang, setLang, user, setUser, settings, setSettings } = useApp();
@@ -63,8 +70,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('');
 
-  const [orderResult, setOrderResult] = useState(null);
-  const [upsellOn, setUpsellOn] = useState(false);
+  const [orderResult, setOrderResult] = useState(null); // { order, bank, resumed?, from? }
 
   // ---------- Boshlang'ich yuklash ----------
   useEffect(() => {
@@ -119,11 +125,50 @@ export default function App() {
   // ---------- Telegram orqaga tugmasi ----------
   useEffect(() => {
     if (storyIndex !== null) return showBackButton(() => setStoryIndex(null));
-    if (screen) return showBackButton(() => setScreen(screen === 'fix' ? fix?.from || null : null));
+    if (screen) {
+      const back = screen === 'fix' ? fix?.from : screen === 'payment' ? orderResult?.from : null;
+      return showBackButton(() => setScreen(back || null));
+    }
     if (sheet) return showBackButton(() => setSheet(null));
     if (tab !== 'home') return showBackButton(() => setTab('home'));
     return undefined;
-  }, [screen, sheet, tab, storyIndex, fix]);
+  }, [screen, sheet, tab, storyIndex, fix, orderResult]);
+
+  // ---------- To'lanmagan buyurtma: chek yuklash oynasini qayta ochish ----------
+  // Mijoz to'lov oynasidan bank ilovasiga o'tib pul o'tkazadi; qaytib kirganda
+  // (ilova qayta ochilgan yoki orqa fondan qaytgan bo'lsa) chek yuklash oynasi
+  // yana ochiladi — chek yuborilmaguncha yoki admin holatni o'zgartirguncha.
+  const screenRef = useRef(screen);
+  screenRef.current = screen;
+
+  useEffect(() => {
+    let hiddenAt = 0;
+    const resume = (maxAge) => {
+      const p = readPendingPay();
+      if (!p || screenRef.current || (maxAge && Date.now() - p.at > maxAge)) return;
+      api
+        .myOrders()
+        .then((list) => {
+          const o = list.find((x) => x.id === p.order.id);
+          if (o?.status !== 'PENDING_PAYMENT') return clearPendingPay(p.order.id);
+          if (screenRef.current) return;
+          setOrderResult({ order: o, bank: p.bank, resumed: true });
+          setSheet(null);
+          setStoryIndex(null);
+          setScreen('payment');
+        })
+        .catch(() => {});
+    };
+
+    resume();
+    const onVisible = () => {
+      if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > 3000) resume(RESUME_FRESH);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Bo'lim almashganda tepaga
   useEffect(() => {
@@ -201,15 +246,38 @@ export default function App() {
     return true;
   };
 
-  // Qo'shimcha taklif: savatda ko'zoynak bo'lsa — atir taklif qilinadi,
-  // aks holda katalogdagi eng arzon, savatda yo'q mahsulot
+  // Qo'shimcha taklif ("... ham qo'shilsinmi?").
+  // Tugma bosib qo'shilgan mahsulot savatda turgan ekan — taklif o'sha mahsulotda
+  // "qotib" turadi va tugma yoqiq ko'rinadi. Aks holda yangi taklif tanlanadi:
+  // savatda ko'zoynak bo'lsa — atir, bo'lmasa katalogdagi eng arzon, savatda yo'q
+  // mahsulot. Gramli atirlar taklif qilinmaydi — ular kamida DECANT_MIN ta olinadi,
+  // bittasi qo'shilsa buyurtma berib bo'lmay qolardi.
+  const upsellItem = cart.upsellKey ? cart.items.find((i) => keyOf(i) === cart.upsellKey) : null;
+  const upsellOn = Boolean(upsellItem);
+
   const upsell = useMemo(() => {
     if (!allProducts.length || !cart.items.length) return null;
+
+    if (upsellItem) {
+      // Mahsulot katalogdan olib tashlangan bo'lsa — savatdagi ma'lumotdan
+      return (
+        allProducts.find((p) => p.id === upsellItem.productId) || {
+          id: upsellItem.productId,
+          nameUz: upsellItem.name,
+          nameRu: upsellItem.name,
+          price: upsellItem.price,
+          images: upsellItem.image ? [{ url: upsellItem.image }] : [],
+        }
+      );
+    }
+
+    const others = cart.items.filter((i) => i !== upsellItem);
+    if (!others.length) return null;
     const inCart = new Set(cart.items.map((i) => i.productId));
-    const available = allProducts.filter((p) => !inCart.has(p.id) && inStock(p));
+    const available = allProducts.filter((p) => !inCart.has(p.id) && !isDecant(p) && inStock(p));
     if (!available.length) return null;
 
-    const hasGlasses = cart.items.some((i) => {
+    const hasGlasses = others.some((i) => {
       const p = allProducts.find((x) => x.id === i.productId);
       return p?.category?.slug === 'glasses';
     });
@@ -222,27 +290,28 @@ export default function App() {
     }
 
     return [...available].sort((a, b) => a.price - b.price)[0] || null;
-  }, [allProducts, cart.items]);
+  }, [allProducts, cart.items, upsellItem]);
 
   const toggleUpsell = () => {
+    if (upsellItem) {
+      cart.remove(cart.upsellKey);
+      cart.setUpsellKey(null);
+      return;
+    }
     if (!upsell) return;
     const v = (upsell.variants || []).find((x) => x.stock > 0);
-    const key = `${upsell.id}-${v?.id || 0}`;
-    if (upsellOn) {
-      cart.remove(key);
-      setUpsellOn(false);
-    } else {
-      cart.add({
-        productId: upsell.id,
-        variantId: v?.id || null,
-        name: lang === 'ru' ? upsell.nameRu : upsell.nameUz,
-        variant: v?.label || null,
-        price: upsell.price + (v?.extraPrice || 0),
-        image: upsell.images?.[0]?.url,
-        qty: 1,
-      });
-      setUpsellOn(true);
-    }
+    if (!v && upsell.variants?.length) return;
+    const item = {
+      productId: upsell.id,
+      variantId: v?.id || null,
+      name: lang === 'ru' ? upsell.nameRu : upsell.nameUz,
+      variant: v?.label || null,
+      price: upsell.price + (v?.extraPrice || 0),
+      image: upsell.images?.[0]?.url,
+      qty: 1,
+    };
+    cart.add(item);
+    cart.setUpsellKey(keyOf(item));
   };
 
   const reorder = (order) => {
@@ -436,9 +505,9 @@ export default function App() {
           settings={settings}
           onBack={() => setScreen(null)}
           onCreated={(res) => {
+            savePendingPay(res.order, res.bank);
             setOrderResult(res);
             cart.clear();
-            setUpsellOn(false);
             setScreen('payment');
           }}
         />
@@ -446,12 +515,16 @@ export default function App() {
 
       {screen === 'payment' && orderResult && (
         <Payment
+          key={orderResult.order.id}
           t={t}
           order={orderResult.order}
-          bank={orderResult.bank}
+          bank={bankOf(settings) || orderResult.bank}
+          resumed={Boolean(orderResult.resumed)}
+          from={orderResult.from}
+          onUploaded={() => clearPendingPay(orderResult.order.id)}
           onDone={() => {
-            setScreen(null);
-            setTab('home');
+            setScreen(orderResult.from || null);
+            if (!orderResult.from) setTab('home');
           }}
         />
       )}
@@ -462,6 +535,10 @@ export default function App() {
           lang={lang}
           onBack={() => setScreen(null)}
           onReorder={reorder}
+          onPay={(order) => {
+            setOrderResult({ order, resumed: true, from: 'orders' });
+            setScreen('payment');
+          }}
           onFix={(id) => {
             setFix({ id, from: 'orders' });
             setScreen('fix');

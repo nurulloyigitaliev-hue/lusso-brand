@@ -8,6 +8,12 @@ export const useCart = create(
   persist(
     (set, get) => ({
       items: [],
+      // Savatdagi "... ham qo'shilsinmi?" tugmasi orqali qo'shilgan mahsulot kaliti.
+      // Tugma holati shu kalit savatda bor-yo'qligidan olinadi — shuning uchun
+      // mahsulot savatdan qanday o'chirilmasin (tugma, axlat qutisi, "−"),
+      // tugma doim to'g'ri ko'rinadi va qayta bosilganda aynan shu mahsulot o'chadi.
+      upsellKey: null,
+      setUpsellKey: (upsellKey) => set({ upsellKey }),
 
       add: (item) => {
         const items = [...get().items];
@@ -31,12 +37,15 @@ export const useCart = create(
 
       remove: (key) => set({ items: get().items.filter((i) => keyOf(i) !== key) }),
 
-      clear: () => set({ items: [] }),
+      clear: () => set({ items: [], upsellKey: null }),
 
       count: () => get().items.reduce((s, i) => s + i.qty, 0),
       subtotal: () => get().items.reduce((s, i) => s + i.price * i.qty, 0),
     }),
-    { name: 'lusso-cart' }
+    {
+      name: 'lusso-cart',
+      partialize: ({ items, upsellKey }) => ({ items, upsellKey }),
+    }
   )
 );
 

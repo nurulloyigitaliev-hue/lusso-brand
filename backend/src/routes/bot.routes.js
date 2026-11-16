@@ -11,6 +11,7 @@ import {
   onIdCommand,
   onPhoto,
   onReceiptConfirm,
+  onReceiptStart,
   onFixStart,
   onDeleteBroadcastCommand,
   onDeleteBroadcastConfirm,
@@ -45,6 +46,9 @@ export function registerBotHandlers(bot) {
 
   // Admin: chek xabaridagi "✅ Tasdiqlash"
   bot.callbackQuery(/^rcpt:ok:(\d+)$/, onReceiptConfirm);
+
+  // Mijoz: buyurtma xabaridagi "🧾 Chekni yuborish" — keyin yuborilgan rasm shu buyurtmaga boradi
+  bot.callbackQuery(/^rcpt:send:(\d+)$/, onReceiptStart);
 
   // Mijoz: "✍️ Manzilni qayta kiriting"
   bot.callbackQuery(/^fix:(\d+)$/, onFixStart);

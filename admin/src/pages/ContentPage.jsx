@@ -21,7 +21,7 @@ export default function ContentPage({ toast }) {
   const [cat, setCat] = useState({ slug: '', nameUz: '', nameRu: '', emoji: '' });
   // Tahrirlanayotgan kategoriya
   const [editId, setEditId] = useState(null);
-  const [editCat, setEditCat] = useState({ emoji: '', nameUz: '', nameRu: '', imageUrl: '' });
+  const [editCat, setEditCat] = useState({ emoji: '', nameUz: '', nameRu: '', imageUrl: '', noteUz: '', noteRu: '' });
 
   const load = () => {
     api.stories().then(setStories).catch((e) => toast(e.message, true));
@@ -98,7 +98,14 @@ export default function ContentPage({ toast }) {
 
   const startEdit = (c) => {
     setEditId(c.id);
-    setEditCat({ emoji: c.emoji || '', nameUz: c.nameUz || '', nameRu: c.nameRu || '', imageUrl: c.imageUrl || '' });
+    setEditCat({
+      emoji: c.emoji || '',
+      nameUz: c.nameUz || '',
+      nameRu: c.nameRu || '',
+      imageUrl: c.imageUrl || '',
+      noteUz: c.noteUz || '',
+      noteRu: c.noteRu || '',
+    });
   };
 
   const saveCategory = async () => {
@@ -109,6 +116,8 @@ export default function ContentPage({ toast }) {
         nameUz: editCat.nameUz.trim(),
         nameRu: editCat.nameRu.trim() || editCat.nameUz.trim(),
         imageUrl: editCat.imageUrl || null,
+        noteUz: editCat.noteUz.trim(),
+        noteRu: editCat.noteRu.trim(),
       });
       toast('Kategoriya saqlandi ✅');
       setEditId(null);
@@ -267,6 +276,27 @@ export default function ContentPage({ toast }) {
                   value={editCat.nameRu}
                   onChange={(e) => setEditCat({ ...editCat, nameRu: e.target.value })}
                 />
+                <label className="label" style={{ marginTop: 12 }}>
+                  Katalogdagi yozuv (kategoriya ochilganda tepada chiqadi)
+                </label>
+                <textarea
+                  className="input"
+                  rows={2}
+                  placeholder="Masalan: Premium luks sifatli atirlar"
+                  value={editCat.noteUz}
+                  onChange={(e) => setEditCat({ ...editCat, noteUz: e.target.value })}
+                />
+                <textarea
+                  className="input"
+                  rows={2}
+                  style={{ marginTop: 10 }}
+                  placeholder="Надпись (ru) — например: Премиальные ароматы люкс-качества"
+                  value={editCat.noteRu}
+                  onChange={(e) => setEditCat({ ...editCat, noteRu: e.target.value })}
+                />
+                <div className="hint" style={{ marginTop: 6 }}>
+                  Bo'sh qoldirilsa — yozuv chiqmaydi. Ruschasi bo'sh bo'lsa, rus tilida ham o'zbekchasi chiqadi.
+                </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                   <button className="btn sm" style={{ flex: 1 }} onClick={saveCategory}>
                     💾 Saqlash
@@ -284,6 +314,7 @@ export default function ContentPage({ toast }) {
                 <span className="cat-name">
                   {c.emoji} {c.nameUz}
                   <small>{c._count?.products ?? 0} ta mahsulot</small>
+                  {c.noteUz && <small className="cat-note-preview">📝 {c.noteUz}</small>}
                 </span>
                 <span className="cat-actions">
                   <button className="btn sm light" onClick={() => startEdit(c)}>

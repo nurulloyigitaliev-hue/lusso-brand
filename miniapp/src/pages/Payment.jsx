@@ -30,7 +30,9 @@ function SuccessMark() {
   );
 }
 
-export default function Payment({ t, order, bank, onDone }) {
+// resumed — oyna qayta ochilgan (ilovaga qaytib kirilganda yoki «Buyurtmalarim»dan):
+// tabrik o'rniga "chekni yuboring" ko'rinadi va tugma ilovani yopmaydi
+export default function Payment({ t, order, bank, resumed = false, from = null, onUploaded, onDone }) {
   const [copied, setCopied] = useState('');
   const [uploaded, setUploaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -54,13 +56,25 @@ export default function Payment({ t, order, bank, onDone }) {
     try {
       await api.uploadReceipt(order.id, file);
       setUploaded(true);
+      onUploaded?.();
       haptic('success');
     } catch (err) {
       alert(err.message);
       haptic('error');
     } finally {
       setBusy(false);
+      // Xuddi shu rasmni qayta tanlasa ham onChange ishlasin
+      if (fileRef.current) fileRef.current.value = '';
     }
+  };
+
+  const tg = isTelegram();
+  const leaveLabel = uploaded ? t.done : resumed ? (from ? t.back : t.toHome) : tg ? t.laterPay : t.toHome;
+  const leave = () => {
+    haptic('success');
+    onDone();
+    // Yangi buyurtmadan keyin Telegram'da ilova yopiladi — mijoz botda xabarni ko'radi
+    if (tg && !resumed) closeApp();
   };
 
   const CopyBtn = ({ value, k }) => (
@@ -80,10 +94,16 @@ export default function Payment({ t, order, bank, onDone }) {
         </div>
 
         <div className="success">
-          <SuccessMark />
-          <h2>{t.paySuccess}</h2>
+          {resumed ? (
+            <div className="pay-resume-ic">
+              <Icon name="receipt" />
+            </div>
+          ) : (
+            <SuccessMark />
+          )}
+          <h2>{resumed ? t.payResumeTitle : t.paySuccess}</h2>
           <div className="no">№ {order.orderNumber}</div>
-          <p>{t.payText}</p>
+          <p>{resumed ? t.payResumeText : t.payText}</p>
         </div>
 
         <div className="bank-card">
@@ -129,21 +149,11 @@ export default function Payment({ t, order, bank, onDone }) {
           )}
         </div>
 
-        <button
-          className="btn"
-          style={{ marginTop: 16 }}
-          onClick={() => {
-            haptic('success');
-            onDone();
-            if (isTelegram()) closeApp();
-          }}
-        >
-          {isTelegram() ? (uploaded ? t.done : t.laterPay) : t.toHome}
+        <button className="btn" style={{ marginTop: 16 }} onClick={leave}>
+          {leaveLabel}
         </button>
 
-        <div className="note">
-          {isTelegram() ? t.afterPayTg : t.afterPayWeb}
-        </div>
+        <div className="note">{tg ? (uploaded ? t.afterPayTg : t.payLaterTg) : t.afterPayWeb}</div>
 
         <button
           type="button"

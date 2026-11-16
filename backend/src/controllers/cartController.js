@@ -3,7 +3,7 @@ import config from '../config/default.js';
 import prisma from '../database/connection.js';
 import UserModel from '../models/User.js';
 import ProductModel from '../models/Product.js';
-import OrderModel, { canFixAddress } from '../models/Order.js';
+import OrderModel, { canFixAddress, awaitsReceipt } from '../models/Order.js';
 import SettingModel from '../models/Setting.js';
 import VisitModel from '../models/Visit.js';
 import { cached, clearCache } from '../core/cache.js';
@@ -191,6 +191,12 @@ export async function uploadReceipt(req, res) {
     where: { id: Number(req.params.id), userId: user.id },
   });
   if (!order) return res.status(404).json({ error: 'Buyurtma topilmadi' });
+  // Tasdiqlangan / jo'natilgan buyurtmaga eski oynadan chek yuklansa — holati orqaga qaytmasin
+  if (!awaitsReceipt(order)) {
+    const error =
+      order.status === 'CANCELLED' ? 'Bu buyurtma bekor qilingan' : "Bu buyurtma to'lovi allaqachon tasdiqlangan";
+    return res.status(400).json({ error, status: order.status });
+  }
 
   const url = `/uploads/${req.file.filename}`;
   const updated = await OrderModel.attachReceipt(order.id, url);

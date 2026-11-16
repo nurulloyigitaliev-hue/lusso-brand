@@ -17,7 +17,7 @@ function stepOf(status) {
 // 운송장번호 → Naver'dagi 택배 kuzatuv (qaysi kompaniya bo'lsa ham topadi)
 const trackUrl = (n) => `https://m.search.naver.com/search.naver?query=${encodeURIComponent(n + ' 택배조회')}`;
 
-export default function Orders({ t, lang, onBack, onReorder, onFix }) {
+export default function Orders({ t, lang, onBack, onReorder, onFix, onPay }) {
   const [orders, setOrders] = useState(null);
   const [copied, setCopied] = useState(null);
 
@@ -101,6 +101,20 @@ export default function Orders({ t, lang, onBack, onReorder, onFix }) {
                     </div>
                   ))}
                 </div>
+
+                {o.status === 'PENDING_PAYMENT' && onPay && (
+                  <div className="order-pay">
+                    <span>🧾 {t.payBanner}</span>
+                    <button
+                      onClick={() => {
+                        haptic('light');
+                        onPay(o);
+                      }}
+                    >
+                      {t.payBtn}
+                    </button>
+                  </div>
+                )}
 
                 {canFixAddress(o) && (
                   <div className="order-fix">

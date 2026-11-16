@@ -127,6 +127,11 @@ export const dict = {
     done: 'Yopish',
     laterPay: "Keyinroq to'layman",
     afterPayTg: "Chek tekshirilgach botga xabar keladi. Jo'natilganda kuzatuv raqami ham yuboriladi.",
+    payLaterTg:
+      "To'lovdan keyin ilovaga qaytsangiz, shu oyna yana ochiladi. Chekni botga ham yuborishingiz mumkin — buyurtma xabaridagi «🧾 Chekni yuborish» tugmasi orqali.",
+    payResumeTitle: 'Chekni yuboring',
+    payResumeText: "To'lovni o'tkazgan bo'lsangiz — chek skrinshotini yuklang. Hali o'tkazmagan bo'lsangiz, quyidagi hisobga o'tkazing.",
+    back: 'Orqaga',
     afterPayWeb: '«Profil → Buyurtmalarim» bo‘limida holatni va kuzatuv raqamini ko‘rasiz.',
     supportAfterOrder: 'Savol bo‘lsa — biz bilan bog‘laning',
 
@@ -142,6 +147,8 @@ export const dict = {
     trackBtn: 'Kuzatish',
     reorder: 'Yana olish',
     fixBanner: "Manzil xato kiritilgan — qayta kiriting",
+    payBanner: "To'lov kutilmoqda — chekni yuboring",
+    payBtn: 'Chek yuborish',
     fixBtn: 'Kiritish',
 
     // Manzilni qayta kiritish
@@ -295,6 +302,11 @@ export const dict = {
     done: 'Закрыть',
     laterPay: 'Оплачу позже',
     afterPayTg: 'После проверки чека придёт сообщение в бот. При отправке — трек-номер.',
+    payLaterTg:
+      'Вернётесь в приложение после оплаты — это окно откроется снова. Чек можно отправить и в бот — кнопкой «🧾 Отправить чек» в сообщении о заказе.',
+    payResumeTitle: 'Отправьте чек',
+    payResumeText: 'Если вы уже оплатили — загрузите скриншот чека. Если ещё нет — переведите на счёт ниже.',
+    back: 'Назад',
     afterPayWeb: 'Статус и трек-номер смотрите в «Профиль → Мои заказы».',
     supportAfterOrder: 'Есть вопросы — свяжитесь с нами',
 
@@ -309,6 +321,8 @@ export const dict = {
     trackBtn: 'Отследить',
     reorder: 'Повторить',
     fixBanner: 'Адрес указан неверно — введите заново',
+    payBanner: 'Ожидает оплаты — отправьте чек',
+    payBtn: 'Отправить чек',
     fixBtn: 'Ввести',
 
     fixTitle: 'Исправить адрес',

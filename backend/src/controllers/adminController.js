@@ -243,6 +243,10 @@ export async function updateCategory(req, res) {
   for (const key of ['slug', 'nameUz', 'nameRu', 'emoji', 'sortOrder']) {
     if (req.body[key] !== undefined) data[key] = req.body[key];
   }
+  // Katalogda kategoriya rasmlari ostidagi yozuv (masalan, "Premium luks sifatli atirlar")
+  for (const key of ['noteUz', 'noteRu']) {
+    if (req.body[key] !== undefined) data[key] = String(req.body[key] ?? '').trim().slice(0, 500);
+  }
   // Plitka rasmi: bo'sh qoldirilsa — ilovada birinchi mahsulot rasmi chiqadi
   if (req.body.imageUrl !== undefined) data.imageUrl = req.body.imageUrl || null;
   try {

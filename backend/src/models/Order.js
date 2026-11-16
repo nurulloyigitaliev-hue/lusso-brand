@@ -12,6 +12,11 @@ export function canFixAddress(order) {
   return Boolean(order?.addressFix) && !CLOSED.includes(order.status);
 }
 
+// Chek qabul qilinadimi: to'lov hali tasdiqlanmagan (chekni qayta yuborish ham mumkin)
+export function awaitsReceipt(order) {
+  return PENDING.includes(order?.status);
+}
+
 function generateOrderNumber() {
   const d = new Date();
   const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(

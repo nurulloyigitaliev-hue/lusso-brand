@@ -486,6 +486,12 @@ tbody tr:hover {
   color: var(--muted);
 }
 
+.cat-row .cat-name .cat-note-preview {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .cat-row .cat-actions {
   flex: 0 0 auto;
   display: flex;
