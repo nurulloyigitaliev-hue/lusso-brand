@@ -109,7 +109,7 @@ export const dict = {
     comment: "Qo'shimcha izoh (ixtiyoriy)",
     eta: "To'lov tasdiqlangach 택배 orqali jo'natamiz — odatda 1–2 kunda yetib boradi. Kuzatuv raqami (운송장번호) botga va «Buyurtmalarim»ga keladi.",
     required: "To'ldiring",
-    phoneBad: "Telefonni to'liq kiriting (010-XXXX-XXXX)",
+    phoneBad: "Telefonni to'liq kiriting: 010-XXXX-XXXX yoki +82 10-XXXX-XXXX",
     confirm: 'Tasdiqlash',
     askQuestion: 'Savolingiz bormi? Biz bilan bog‘laning',
 
@@ -285,7 +285,7 @@ export const dict = {
     comment: 'Комментарий (необязательно)',
     eta: 'После подтверждения оплаты отправим 택배 — обычно доставка 1–2 дня. Трек-номер (운송장번호) придёт в бот и в «Мои заказы».',
     required: 'Заполните это поле',
-    phoneBad: 'Введите номер полностью (010-XXXX-XXXX)',
+    phoneBad: 'Введите номер полностью: 010-XXXX-XXXX или +82 10-XXXX-XXXX',
     confirm: 'Подтвердить',
     askQuestion: 'Есть вопросы? Свяжитесь с нами',
 
