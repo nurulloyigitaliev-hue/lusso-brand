@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 import { haptic } from '../telegram';
-import { formatPhone, phoneOk } from './Checkout';
+import { formatPhone, phoneOk, normalizePhone } from '../phone';
 import Icon from '../components/Icon';
 
 // Admin "Ma'lumot xato kiritildi" bosgan va buyurtma hali jo'natilmagan bo'lsa
@@ -62,7 +62,7 @@ export default function AddressFix({ t, orderId, onBack, onDone }) {
 
     setBusy(true);
     try {
-      const updated = await api.fixAddress(order.id, { ...form, phone: formatPhone(form.phone) });
+      const updated = await api.fixAddress(order.id, { ...form, phone: normalizePhone(form.phone) });
       setOrder(updated);
       setSaved(true);
       haptic('success');

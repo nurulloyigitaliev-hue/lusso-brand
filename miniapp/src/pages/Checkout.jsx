@@ -4,22 +4,12 @@ import api from '../api';
 import { haptic } from '../telegram';
 import { openContact } from '../components/ContactSheet';
 import Icon from '../components/Icon';
-
-// 01012345678 → 010-1234-5678
-export function formatPhone(v) {
-  const d = String(v || '').replace(/\D/g, '').slice(0, 11);
-  if (d.length < 4) return d;
-  if (d.length < 8) return `${d.slice(0, 3)}-${d.slice(3)}`;
-  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
-  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
-}
-
-export const phoneOk = (v) => /^01[016789]\d{7,8}$/.test(String(v).replace(/\D/g, ''));
+import { formatPhone, phoneOk, normalizePhone, prefillPhone } from '../phone';
 
 export default function Checkout({ t, user, items, settings, onBack, onCreated }) {
   const [form, setForm] = useState({
     customerName: user?.firstName || '',
-    phone: formatPhone(user?.phone || ''),
+    phone: prefillPhone(user?.phone),
     street: '',
     detail: '',
     comment: '',
@@ -56,7 +46,7 @@ export default function Checkout({ t, user, items, settings, onBack, onCreated }
         if (o) {
           fill({
             customerName: o.customerName,
-            phone: formatPhone(o.phone),
+            phone: prefillPhone(o.phone),
             street: o.street,
             detail: o.detail || '',
           });
@@ -102,7 +92,7 @@ export default function Checkout({ t, user, items, settings, onBack, onCreated }
     try {
       const res = await api.createOrder({
         ...form,
-        phone: formatPhone(form.phone),
+        phone: normalizePhone(form.phone),
         comment: form.comment.trim(),
         saveAddress: saveAddr,
         items: items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty })),
